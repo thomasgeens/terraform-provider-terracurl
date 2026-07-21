@@ -493,7 +493,7 @@ func TestAccresourceCurlRead(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
-		CheckDestroy:             testMockEndpointCount("GET https://example.com/read", 1),
+		CheckDestroy:             testMockEndpointRegister("GET https://example.com/read"),
 		Steps: []resource.TestStep{
 			{
 				Config: testAccresourceCurlRead(rName, RequestBody),
@@ -1406,6 +1406,10 @@ func TestCurlResource_Read_ResponseSensitiveToggle(t *testing.T) {
 		t.Error("Expected drift to be detected after response changed, but drift_marker remained 'initial'")
 	}
 
+	if stateAfterRead2.Response.ValueString() != initialResponse {
+		t.Errorf("Expected stored response to remain unchanged on drift, got %s", stateAfterRead2.Response.ValueString())
+	}
+
 	stateWithReverseToggle := CurlResourceModel{
 		Id:                       types.StringValue("test"),
 		Name:                     types.StringValue("test"),
@@ -1456,6 +1460,238 @@ func TestCurlResource_Read_ResponseSensitiveToggle(t *testing.T) {
 	if stateAfterRead3.DriftMarker.ValueString() == "initial" {
 		t.Error("Expected drift to be detected after reverse toggle, but drift_marker remained 'initial'")
 	}
+
+	if stateAfterRead3.SensitiveResponse.ValueString() != changedResponse {
+		t.Errorf("Expected stored sensitive response to remain unchanged on drift, got %s", stateAfterRead3.SensitiveResponse.ValueString())
+	}
+}
+
+func TestCheckReadDrift_NullPriorNoFalsePositive(t *testing.T) {
+	data := CurlResourceModel{
+		ReadResponseCodes:    types.ListValueMust(types.StringType, []attr.Value{types.StringValue("200")}),
+		Response:             types.StringValue("null"),
+		ResponseSensitive:    types.BoolValue(false),
+		IgnoreResponseFields: types.ListNull(types.StringType),
+	}
+
+	drifted, _, diags := checkReadDrift(data, 200, "null")
+	if diags.HasError() {
+		t.Fatalf("unexpected error: %v", diags)
+	}
+	if drifted {
+		t.Error("expected no drift when prior sanitizes to null and live response is null")
+	}
+}
+
+func TestCurlResource_ModifyPlan_ReadDrift(t *testing.T) {
+	t.Setenv("USE_DEFAULT_CLIENT_FOR_TESTS", "true")
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	storedResponse := `{"key":"value1"}`
+	remoteResponse := `{"key":"value2"}`
+
+	httpmock.RegisterResponder(
+		"GET",
+		"https://example.com/read",
+		httpmock.NewStringResponder(200, remoteResponse),
+	)
+
+	ctx := context.Background()
+	r := &CurlResource{meta: DefaultProviderMeta()}
+
+	schemaResp := &resource2.SchemaResponse{}
+	r.Schema(ctx, resource2.SchemaRequest{}, schemaResp)
+
+	stateModel := CurlResourceModel{
+		Id:                       types.StringValue("test"),
+		Name:                     types.StringValue("test"),
+		Url:                      types.StringValue("https://example.com/create"),
+		Method:                   types.StringValue("POST"),
+		SkipRead:                 types.BoolValue(false),
+		ReadUrl:                  types.StringValue("https://example.com/read"),
+		ReadMethod:               types.StringValue("GET"),
+		ReadResponseCodes:        types.ListValueMust(types.StringType, []attr.Value{types.StringValue("200")}),
+		ResponseCodes:            types.ListValueMust(types.StringType, []attr.Value{types.StringValue("200")}),
+		Response:                 types.StringValue(storedResponse),
+		SensitiveResponse:        types.StringValue(""),
+		ResponseSensitive:        types.BoolValue(false),
+		DriftMarker:              types.StringValue("initial"),
+		IgnoreResponseFields:     types.ListNull(types.StringType),
+		DestroyResponseCodes:     types.ListNull(types.StringType),
+		SkipDestroy:              types.BoolValue(true),
+		Headers:                  types.MapNull(types.StringType),
+		RequestParameters:        types.MapNull(types.StringType),
+		ReadHeaders:              types.MapNull(types.StringType),
+		ReadParameters:           types.MapNull(types.StringType),
+		DestroyHeaders:           types.MapNull(types.StringType),
+		DestroyRequestParameters: types.MapNull(types.StringType),
+	}
+
+	state := tfsdk.State{Schema: schemaResp.Schema}
+	if diags := state.Set(ctx, &stateModel); diags.HasError() {
+		t.Fatalf("failed to set state: %v", diags)
+	}
+
+	plan := tfsdk.Plan{Schema: schemaResp.Schema}
+	if diags := plan.Set(ctx, &stateModel); diags.HasError() {
+		t.Fatalf("failed to set plan: %v", diags)
+	}
+
+	config := tfsdk.Config{Schema: schemaResp.Schema}
+
+	modifyResp := &resource2.ModifyPlanResponse{Plan: plan}
+	r.ModifyPlan(ctx, resource2.ModifyPlanRequest{
+		State:  state,
+		Plan:   plan,
+		Config: config,
+	}, modifyResp)
+
+	if modifyResp.Diagnostics.HasError() {
+		t.Fatalf("ModifyPlan failed: %v", modifyResp.Diagnostics)
+	}
+
+	if len(modifyResp.RequiresReplace) == 0 {
+		t.Fatal("expected RequiresReplace when read drift is detected")
+	}
+}
+
+func TestCurlResource_ModifyPlan_BadReadStatusCode(t *testing.T) {
+	t.Setenv("USE_DEFAULT_CLIENT_FOR_TESTS", "true")
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	httpmock.RegisterResponder(
+		"GET",
+		"https://example.com/read",
+		httpmock.NewStringResponder(500, `{"error":"failed"}`),
+	)
+
+	ctx := context.Background()
+	r := &CurlResource{meta: DefaultProviderMeta()}
+
+	schemaResp := &resource2.SchemaResponse{}
+	r.Schema(ctx, resource2.SchemaRequest{}, schemaResp)
+
+	stateModel := CurlResourceModel{
+		Id:                       types.StringValue("test"),
+		Name:                     types.StringValue("test"),
+		Url:                      types.StringValue("https://example.com/create"),
+		Method:                   types.StringValue("POST"),
+		SkipRead:                 types.BoolValue(false),
+		ReadUrl:                  types.StringValue("https://example.com/read"),
+		ReadMethod:               types.StringValue("GET"),
+		ReadResponseCodes:        types.ListValueMust(types.StringType, []attr.Value{types.StringValue("200")}),
+		ResponseCodes:            types.ListValueMust(types.StringType, []attr.Value{types.StringValue("200")}),
+		Response:                 types.StringValue(`{"key":"value1"}`),
+		SensitiveResponse:        types.StringValue(""),
+		ResponseSensitive:        types.BoolValue(false),
+		DriftMarker:              types.StringValue("initial"),
+		IgnoreResponseFields:     types.ListNull(types.StringType),
+		DestroyResponseCodes:     types.ListNull(types.StringType),
+		SkipDestroy:              types.BoolValue(true),
+		Headers:                  types.MapNull(types.StringType),
+		RequestParameters:        types.MapNull(types.StringType),
+		ReadHeaders:              types.MapNull(types.StringType),
+		ReadParameters:           types.MapNull(types.StringType),
+		DestroyHeaders:           types.MapNull(types.StringType),
+		DestroyRequestParameters: types.MapNull(types.StringType),
+	}
+
+	state := tfsdk.State{Schema: schemaResp.Schema}
+	if diags := state.Set(ctx, &stateModel); diags.HasError() {
+		t.Fatalf("failed to set state: %v", diags)
+	}
+
+	plan := tfsdk.Plan{Schema: schemaResp.Schema}
+	if diags := plan.Set(ctx, &stateModel); diags.HasError() {
+		t.Fatalf("failed to set plan: %v", diags)
+	}
+
+	config := tfsdk.Config{Schema: schemaResp.Schema}
+
+	modifyResp := &resource2.ModifyPlanResponse{Plan: plan}
+	r.ModifyPlan(ctx, resource2.ModifyPlanRequest{
+		State:  state,
+		Plan:   plan,
+		Config: config,
+	}, modifyResp)
+
+	if modifyResp.Diagnostics.HasError() {
+		t.Fatalf("ModifyPlan failed: %v", modifyResp.Diagnostics)
+	}
+
+	if len(modifyResp.RequiresReplace) == 0 {
+		t.Fatal("expected RequiresReplace when read status code is unexpected")
+	}
+}
+
+func TestAccCurlResourceDriftTriggersReplace(t *testing.T) {
+	t.Setenv("TF_ACC", "true")
+	t.Setenv("USE_DEFAULT_CLIENT_FOR_TESTS", "true")
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	httpmock.RegisterResponder(
+		"POST",
+		"https://example.com/create",
+		httpmock.NewStringResponder(200, `{"key":"value1"}`),
+	)
+	httpmock.RegisterResponder(
+		"GET",
+		"https://example.com/read",
+		httpmock.NewStringResponder(200, `{"key":"value1"}`),
+	)
+
+	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+	config := testAccCurlResourceDriftDetection(rName)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: config,
+			},
+			{
+				PreConfig: func() {
+					httpmock.RegisterResponder(
+						"GET",
+						"https://example.com/read",
+						httpmock.NewStringResponder(200, `{"key":"value2"}`),
+					)
+				},
+				Config:             config,
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+func testAccCurlResourceDriftDetection(name string) string {
+	return fmt.Sprintf(`
+resource "terracurl_request" "test" {
+  name           = "%s"
+  url            = "https://example.com/create"
+  method         = "POST"
+  response_codes = ["200"]
+
+  request_body = jsonencode({
+    key = "value1"
+  })
+
+  skip_read           = false
+  read_url            = "https://example.com/read"
+  read_method         = "GET"
+  read_response_codes = ["200"]
+
+  skip_destroy = true
+}
+`, name)
 }
 
 // TestCurlResource_StateUpgrade_EmptyDestroyParameters tests handling of null destroy_parameters.

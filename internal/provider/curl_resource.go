@@ -34,6 +34,7 @@ const (
 // Ensure provider defined types fully satisfy framework interfaces.
 var _ resource.Resource = &CurlResource{}
 var _ resource.ResourceWithImportState = &CurlResource{}
+var _ resource.ResourceWithModifyPlan = &CurlResource{}
 
 func NewCurlResource() resource.Resource {
 	return &CurlResource{}
@@ -405,7 +406,7 @@ func (r *CurlResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			},
 			"drift_marker": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "Marker to track state drift and trigger resource replacement",
+				MarkdownDescription: "Informational marker updated when remote drift is detected during read. Replacement is planned via ModifyPlan when drift is detected.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -612,31 +613,23 @@ func (r *CurlResource) Create(ctx context.Context, req resource.CreateRequest, r
 	resp.Diagnostics.Append(diags...)
 }
 
-func (r *CurlResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var data CurlResourceModel
+type readDriftResult struct {
+	Drifted           bool
+	SanitizedResponse string
+	StatusCode        int
+}
 
-	// Load prior state
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-	if resp.Diagnostics.HasError() {
-		return
+func ignoredResponseFields(data CurlResourceModel) []string {
+	var ignoredFields []string
+	for _, v := range data.IgnoreResponseFields.Elements() {
+		if strVal, ok := v.(types.String); ok {
+			ignoredFields = append(ignoredFields, strVal.ValueString())
+		}
 	}
+	return ignoredFields
+}
 
-	// Skip read if configured
-	if data.SkipRead.ValueBool() {
-		tflog.Debug(ctx, "Skipping Read() as skip_read is true")
-		return
-	}
-	// ======= Validate Required Read Arguments =======
-	if data.ReadUrl.IsNull() || data.ReadMethod.IsNull() || data.ReadResponseCodes.IsNull() {
-		resp.Diagnostics.AddError(
-			"Read Configuration Error",
-			"`read_url`, `read_method`, and `read_response_codes` are required when `skip_read` is false.",
-		)
-		return
-	}
-
-	// ======= Build TLS Client if `read_*` TLS Arguments Provided =======
-	var client *http.Client
+func (r *CurlResource) executeReadRequest(ctx context.Context, data CurlResourceModel) (statusCode int, body string, diags diag.Diagnostics) {
 	useReadTls := !data.ReadCertFile.IsNull() || !data.ReadKeyFile.IsNull() || !data.ReadCaCertFile.IsNull()
 
 	var readTlsConfig *TlsConfig
@@ -654,14 +647,12 @@ func (r *CurlResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		tflog.Debug(ctx, "Using default HTTP client for Read() operation")
 	}
 
-	var err error
-	client, err = r.providerMeta().NewHTTPClient(readTlsConfig)
+	client, err := r.providerMeta().NewHTTPClient(readTlsConfig)
 	if err != nil {
-		resp.Diagnostics.AddError("Read Error", fmt.Sprintf("Failed to create HTTP client: %s", err))
+		diags.AddError("Read Error", fmt.Sprintf("Failed to create HTTP client: %s", err))
 		return
 	}
 
-	// ======= Build Read Request =======
 	var reqBody io.Reader = nil
 	if !data.ReadRequestBody.IsNull() && !data.ReadRequestBody.IsUnknown() {
 		reqBody = bytes.NewBuffer([]byte(data.ReadRequestBody.ValueString()))
@@ -669,14 +660,12 @@ func (r *CurlResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	request, err := http.NewRequest(data.ReadMethod.ValueString(), data.ReadUrl.ValueString(), reqBody)
 	if err != nil {
-		resp.Diagnostics.AddError("Read Error", fmt.Sprintf("Failed to create request: %s", err))
+		diags.AddError("Read Error", fmt.Sprintf("Failed to create request: %s", err))
 		return
 	}
 
-	// ======= Add Headers =======
 	applyRequestHeaders(request, data.ReadHeaders)
 
-	// ======= Add Query Parameters =======
 	if !data.ReadParameters.IsNull() && !data.ReadParameters.IsUnknown() {
 		params := request.URL.Query()
 		for k, v := range data.ReadParameters.Elements() {
@@ -687,65 +676,152 @@ func (r *CurlResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		request.URL.RawQuery = params.Encode()
 	}
 
-	// ======= Execute Request =======
 	tflog.Debug(ctx, fmt.Sprintf("Resource read API Call: \nURL: %s\nHeaders: %s\nMethod: %s\nRequest Body: %s\n", request.URL.String(), request.Header, request.Method, data.ReadRequestBody.ValueString()))
 
 	httpResp, err := client.Do(request)
 	if err != nil {
-		resp.Diagnostics.AddError("Read Error", fmt.Sprintf("Failed to call API: %s", err))
+		diags.AddError("Read Error", fmt.Sprintf("Failed to call API: %s", err))
 		return
 	}
 
 	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			return
-		}
+		_ = Body.Close()
 	}(httpResp.Body)
 
-	// Read and store the response
 	bodyBytes, _ := io.ReadAll(httpResp.Body)
-	newResponse := string(bodyBytes)
+	return httpResp.StatusCode, string(bodyBytes), diags
+}
 
-	// ===== DRIFT DETECTION =====
+func checkReadDrift(data CurlResourceModel, statusCode int, liveResponse string) (drifted bool, sanitizedLive string, diags diag.Diagnostics) {
+	ignoredFields := ignoredResponseFields(data)
 
-	var ignoredFields []string
-	for _, v := range data.IgnoreResponseFields.Elements() {
-		if strVal, ok := v.(types.String); ok {
-			ignoredFields = append(ignoredFields, strVal.ValueString())
-		}
-	}
-
-	sanitizedResponse, err := sanitizeResponse(newResponse, ignoredFields)
+	var err error
+	sanitizedLive, err = sanitizeResponse(liveResponse, ignoredFields)
 	if err != nil {
-		resp.Diagnostics.AddError("Sanitize Error", fmt.Sprintf("Failed to sanitize stored response: %s", err))
+		diags.AddError("Sanitize Error", fmt.Sprintf("Failed to sanitize live response: %s", err))
 		return
 	}
 
-	// Compare old and new sanitized responses. The prior response is stored in
-	// whichever attribute matches the current response_sensitive setting.
 	priorResponse := priorResponseValue(data.ResponseSensitive, data.Response, data.SensitiveResponse)
 	oldSanitized, err := sanitizeResponse(priorResponse, ignoredFields)
 	if err != nil {
-		resp.Diagnostics.AddError("Sanitize Error", fmt.Sprintf("Failed to sanitize prior response: %s", err))
+		diags.AddError("Sanitize Error", fmt.Sprintf("Failed to sanitize prior response: %s", err))
 		return
 	}
 
-	// Drift detection
-	if !responseCodeChecker(data.ReadResponseCodes, httpResp.StatusCode) || (oldSanitized != "null" && oldSanitized != sanitizedResponse) {
+	if !responseCodeChecker(data.ReadResponseCodes, statusCode) {
+		return true, sanitizedLive, diags
+	}
+
+	if oldSanitized != "null" && oldSanitized != sanitizedLive {
+		return true, sanitizedLive, diags
+	}
+
+	return false, sanitizedLive, diags
+}
+
+func (r *CurlResource) detectReadDrift(ctx context.Context, data CurlResourceModel) (readDriftResult, diag.Diagnostics) {
+	var result readDriftResult
+	var diags diag.Diagnostics
+
+	if data.SkipRead.ValueBool() {
+		return result, diags
+	}
+
+	if data.ReadUrl.IsNull() || data.ReadMethod.IsNull() || data.ReadResponseCodes.IsNull() {
+		diags.AddError(
+			"Read Configuration Error",
+			"`read_url`, `read_method`, and `read_response_codes` are required when `skip_read` is false.",
+		)
+		return result, diags
+	}
+
+	statusCode, body, execDiags := r.executeReadRequest(ctx, data)
+	diags.Append(execDiags...)
+	if diags.HasError() {
+		return result, diags
+	}
+
+	result.StatusCode = statusCode
+	drifted, sanitizedLive, compareDiags := checkReadDrift(data, statusCode, body)
+	diags.Append(compareDiags...)
+	if diags.HasError() {
+		return result, diags
+	}
+
+	result.Drifted = drifted
+	result.SanitizedResponse = sanitizedLive
+	return result, diags
+}
+
+func (r *CurlResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var data CurlResourceModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if data.SkipRead.ValueBool() {
+		tflog.Debug(ctx, "Skipping Read() as skip_read is true")
+		return
+	}
+
+	result, diags := r.detectReadDrift(ctx, data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if result.Drifted {
 		tflog.Warn(ctx, "Drift detected: Response has changed, marking for recreation.")
 		data.DriftMarker = types.StringValue(time.Now().Format(time.RFC3339Nano))
 	} else {
-		// Set an initial drift marker if none exists
 		if data.DriftMarker.IsNull() || data.DriftMarker.IsUnknown() {
 			data.DriftMarker = types.StringValue("initial")
 		}
+		setResourceResponseValues(&data, result.SanitizedResponse)
 	}
 
-	// Store the new sanitized response in the appropriate attribute.
-	setResourceResponseValues(&data, sanitizedResponse)
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+}
+
+func (r *CurlResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
+		return
+	}
+
+	var data CurlResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if data.SkipRead.ValueBool() {
+		return
+	}
+
+	result, diags := r.detectReadDrift(ctx, data)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if result.Drifted {
+		var plan CurlResourceModel
+		resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+
+		plan.DriftMarker = types.StringValue(time.Now().Format(time.RFC3339Nano))
+		resp.Diagnostics.Append(resp.Plan.Set(ctx, &plan)...)
+		resp.RequiresReplace.Append(path.Root("drift_marker"))
+		resp.Diagnostics.AddWarning(
+			"Remote Drift Detected",
+			"The read response does not match stored state. Terraform will replace this resource to reconcile configuration.",
+		)
+	}
 }
 
 func (r *CurlResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
