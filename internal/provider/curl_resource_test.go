@@ -1762,3 +1762,86 @@ func TestCurlResource_StateUpgrade_EmptyDestroyParameters(t *testing.T) {
 		t.Errorf("Expected id to be preserved, got '%s'", upgradedState.Id.ValueString())
 	}
 }
+
+func TestCurlResource_StateUpgrade_NilRequestState(t *testing.T) {
+	ctx := context.Background()
+	r := &CurlResource{}
+
+	upgraders := r.UpgradeState(ctx)
+	upgrader, ok := upgraders[0]
+	if !ok {
+		t.Fatal("No upgrader found for version 0")
+	}
+
+	// v1.2-style state JSON from issue #134 (provider SDK -> framework upgrade).
+	rawStateJSON := `{
+		"id": "example-get-call",
+		"name": "example-get-call",
+		"url": "https://jsonplaceholder.typicode.com/posts/1",
+		"method": "GET",
+		"headers": {"Content-Type": "application/json"},
+		"response_codes": ["200", "201"],
+		"response": "{\"userId\":1,\"id\":1,\"title\":\"sunt aut facere\",\"body\":\"quia et suscipit\"}",
+		"status_code": "200"
+	}`
+
+	rUpgrade := &CurlResource{}
+	schemaResp := &resource2.SchemaResponse{}
+	rUpgrade.Schema(ctx, resource2.SchemaRequest{}, schemaResp)
+	schemaVar := schemaResp.Schema
+
+	req := resource2.UpgradeStateRequest{
+		State: nil,
+		RawState: &tfprotov6.RawState{
+			JSON: []byte(rawStateJSON),
+		},
+	}
+
+	resp := &resource2.UpgradeStateResponse{
+		State: tfsdk.State{
+			Schema: schemaVar,
+		},
+	}
+
+	upgrader.StateUpgrader(ctx, req, resp)
+	if resp.Diagnostics.HasError() {
+		t.Fatalf("upgrade failed: %v", resp.Diagnostics)
+	}
+
+	var upgradedState CurlResourceModel
+	diags := resp.State.Get(ctx, &upgradedState)
+	if diags.HasError() {
+		t.Fatalf("error getting upgraded state: %v", diags)
+	}
+
+	if upgradedState.Id.ValueString() != "example-get-call" {
+		t.Errorf("Expected id 'example-get-call', got '%s'", upgradedState.Id.ValueString())
+	}
+	if upgradedState.Name.ValueString() != "example-get-call" {
+		t.Errorf("Expected name 'example-get-call', got '%s'", upgradedState.Name.ValueString())
+	}
+	if upgradedState.Url.ValueString() != "https://jsonplaceholder.typicode.com/posts/1" {
+		t.Errorf("Expected url preserved, got '%s'", upgradedState.Url.ValueString())
+	}
+	if upgradedState.Method.ValueString() != "GET" {
+		t.Errorf("Expected method 'GET', got '%s'", upgradedState.Method.ValueString())
+	}
+	if upgradedState.Headers.IsNull() {
+		t.Error("Expected headers to be preserved")
+	}
+	if upgradedState.ResponseCodes.IsNull() {
+		t.Error("Expected response_codes to be preserved")
+	}
+	if !upgradedState.SkipRead.ValueBool() {
+		t.Error("Expected skip_read to be set to true in v1 upgrade")
+	}
+	if !upgradedState.ReadUrl.IsNull() {
+		t.Error("Expected read_url to be null in v1 upgrade")
+	}
+	if !upgradedState.ReadResponseCodes.IsNull() {
+		t.Error("Expected read_response_codes to be null in v1 upgrade")
+	}
+	if upgradedState.ResponseSensitive.IsNull() || upgradedState.ResponseSensitive.ValueBool() {
+		t.Error("Expected response_sensitive to default to false")
+	}
+}

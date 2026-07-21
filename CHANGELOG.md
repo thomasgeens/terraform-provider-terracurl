@@ -1,3 +1,9 @@
+## 2.5.3
+
+BUG FIXES:
+
+- Fix panic upgrading `terracurl_request` state from provider v1.x when `UpgradeResourceState` receives nil prior state. Closes #134.
+
 ## 2.5.2
 
 BUG FIXES:
