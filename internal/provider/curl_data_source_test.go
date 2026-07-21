@@ -339,8 +339,12 @@ func TestAccCurlDataSourceSkipTlsVerifyOnly(t *testing.T) {
 		t.Fatalf("failed to create TLS test server: %v", err)
 	}
 	defer server.Close()
-	defer os.Remove(certFile)
-	defer os.Remove(keyFile)
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(certFile)
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(keyFile)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
