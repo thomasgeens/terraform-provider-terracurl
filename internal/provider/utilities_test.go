@@ -140,3 +140,20 @@ func TestTlsClientRequests(t *testing.T) {
 		t.Errorf("Expected body 'success', got '%s'", body)
 	}
 }
+
+func TestNeedsTlsClient(t *testing.T) {
+	nullString := types.StringNull()
+	nullBool := types.BoolNull()
+
+	if needsTlsClient(nullString, nullString, nullString, nullString, nullBool) {
+		t.Error("expected false when all TLS attributes are unset")
+	}
+
+	if !needsTlsClient(nullString, nullString, nullString, nullString, types.BoolValue(true)) {
+		t.Error("expected true when skip_tls_verify is true without cert attributes")
+	}
+
+	if !needsTlsClient(types.StringValue("/path/to/cert.pem"), nullString, nullString, nullString, nullBool) {
+		t.Error("expected true when cert_file is set")
+	}
+}

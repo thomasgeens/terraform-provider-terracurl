@@ -146,17 +146,9 @@ func (c *CurlAction) Invoke(ctx context.Context, req action.InvokeRequest, resp 
 		return
 	}
 
-	useTLS := !data.CertFile.IsNull() || !data.KeyFile.IsNull() || !data.CaCertFile.IsNull() || !data.CaCertDirectory.IsNull()
-
 	var tlsConfig *TlsConfig
-	if useTLS {
-		tlsConfig = &TlsConfig{
-			CertFile:        data.CertFile.ValueString(),
-			KeyFile:         data.KeyFile.ValueString(),
-			CaCertFile:      data.CaCertFile.ValueString(),
-			CaCertDirectory: data.CaCertDirectory.ValueString(),
-			SkipTlsVerify:   data.SkipTlsVerify.ValueBool(),
-		}
+	if needsTlsClient(data.CertFile, data.KeyFile, data.CaCertFile, data.CaCertDirectory, data.SkipTlsVerify) {
+		tlsConfig = tlsConfigFromAttrs(data.CertFile, data.KeyFile, data.CaCertFile, data.CaCertDirectory, data.SkipTlsVerify)
 
 		if tlsConfig.CertFile != "" && tlsConfig.KeyFile == "" {
 			resp.Diagnostics.AddError("Validation Error", "`key_file` must be set if `cert_file` is set.")

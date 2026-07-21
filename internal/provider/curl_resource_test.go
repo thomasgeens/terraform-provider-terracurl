@@ -766,6 +766,48 @@ func TestAccCurlResourceWithTLSSkipVerify(t *testing.T) {
 	})
 }
 
+func TestAccCurlResourceSkipTlsVerifyOnly(t *testing.T) {
+	t.Setenv("TF_ACC", "true")
+	t.Setenv("USE_DEFAULT_CLIENT_FOR_TESTS", "true")
+
+	server, certFile, keyFile, err := createTLSServer()
+	if err != nil {
+		t.Fatalf("failed to create TLS test server: %v", err)
+	}
+	defer server.Close()
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(certFile)
+	defer func(name string) {
+		_ = os.Remove(name)
+	}(keyFile)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccresourceCurlSkipTlsVerifyOnly("skip_tls_only", server.URL),
+				Check:  resource.TestCheckResourceAttr("terracurl_request.skip_tls_only", "response", `{"message":"TLS test successful"}`),
+			},
+		},
+	})
+}
+
+func testAccresourceCurlSkipTlsVerifyOnly(name, url string) string {
+	return fmt.Sprintf(`
+resource "terracurl_request" "skip_tls_only" {
+  name           = "%s"
+  url            = "%s"
+  method         = "GET"
+  response_codes = ["200"]
+  skip_tls_verify = true
+  skip_read      = true
+  skip_destroy   = true
+}
+`, name, url)
+}
+
 func TestAccresourceCurlCreateSanitizesResponse(t *testing.T) {
 	t.Setenv("TF_ACC", "true")
 	t.Setenv("USE_DEFAULT_CLIENT_FOR_TESTS", "true")

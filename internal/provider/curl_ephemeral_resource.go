@@ -425,22 +425,13 @@ func (e *EphemeralCurlResource) Open(ctx context.Context, req ephemeral.OpenRequ
 
 	data.Id = types.StringValue(data.Name.ValueString())
 
-	// useTLS is used to decide.
-	useTLS := !data.CertFile.IsNull() || !data.KeyFile.IsNull() || !data.CaCertFile.IsNull() || !data.CaCertDirectory.IsNull()
-
 	var client *http.Client
 	var err error
 	var tlsConfig *TlsConfig
 
-	if useTLS {
+	if needsTlsClient(data.CertFile, data.KeyFile, data.CaCertFile, data.CaCertDirectory, data.SkipTlsVerify) {
 		tflog.Debug(ctx, "Creating TLS enabled client")
-		tlsConfig = &TlsConfig{
-			CertFile:        data.CertFile.ValueString(),
-			KeyFile:         data.KeyFile.ValueString(),
-			CaCertFile:      data.CaCertFile.ValueString(),
-			CaCertDirectory: data.CaCertDirectory.ValueString(),
-			SkipTlsVerify:   data.SkipTlsVerify.ValueBool(),
-		}
+		tlsConfig = tlsConfigFromAttrs(data.CertFile, data.KeyFile, data.CaCertFile, data.CaCertDirectory, data.SkipTlsVerify)
 
 		if tlsConfig.CertFile != "" && tlsConfig.KeyFile == "" {
 			resp.Diagnostics.AddError("Validation Error", "`key_file` must be set if `cert_file` is set.")
@@ -1070,9 +1061,11 @@ func (e *EphemeralCurlResource) Renew(ctx context.Context, req ephemeral.RenewRe
 
 	var client *http.Client
 
-	useTls := (!privateData.RenewCertFile.IsNull() && privateData.RenewCertFile.ValueString() != "") ||
-		(!privateData.RenewKeyFile.IsNull() && privateData.RenewKeyFile.ValueString() != "") ||
-		(!privateData.RenewCaCertFile.IsNull() && privateData.RenewCaCertFile.ValueString() != "")
+	useTls := hasValue(privateData.RenewCertFile) ||
+		hasValue(privateData.RenewKeyFile) ||
+		hasValue(privateData.RenewCaCertFile) ||
+		hasValue(privateData.RenewCaCertDirectory) ||
+		privateData.RenewSkipTlsVerify.ValueBool()
 
 	var tlsConfig *TlsConfig
 	if useTls {
@@ -1420,7 +1413,9 @@ func (e *EphemeralCurlResource) Close(ctx context.Context, req ephemeral.CloseRe
 	var client *http.Client
 	useCloseTls := hasValue(privateData.CloseCertFile) ||
 		hasValue(privateData.CloseKeyFile) ||
-		hasValue(privateData.CloseCaCertFile)
+		hasValue(privateData.CloseCaCertFile) ||
+		hasValue(privateData.CloseCaCertDirectory) ||
+		privateData.CloseSkipTlsVerify.ValueBool()
 
 	var closeTlsConfig *TlsConfig
 	if useCloseTls {
