@@ -488,21 +488,12 @@ func (r *CurlResource) Create(ctx context.Context, req resource.CreateRequest, r
 
 	data.Id = types.StringValue(data.Name.ValueString())
 
-	// useTLS is used to decide
-	useTLS := !data.CertFile.IsNull() || !data.KeyFile.IsNull() || !data.CaCertFile.IsNull() || !data.CaCertDirectory.IsNull()
-
 	var client *http.Client
 	var err error
 	var tlsConfig *TlsConfig
 
-	if useTLS {
-		tlsConfig = &TlsConfig{
-			CertFile:        data.CertFile.ValueString(),
-			KeyFile:         data.KeyFile.ValueString(),
-			CaCertFile:      data.CaCertFile.ValueString(),
-			CaCertDirectory: data.CaCertDirectory.ValueString(),
-			SkipTlsVerify:   data.SkipTlsVerify.ValueBool(),
-		}
+	if needsTlsClient(data.CertFile, data.KeyFile, data.CaCertFile, data.CaCertDirectory, data.SkipTlsVerify) {
+		tlsConfig = tlsConfigFromAttrs(data.CertFile, data.KeyFile, data.CaCertFile, data.CaCertDirectory, data.SkipTlsVerify)
 
 		if tlsConfig.CertFile != "" && tlsConfig.KeyFile == "" {
 			resp.Diagnostics.AddError("Validation Error", "`key_file` must be set if `cert_file` is set.")
@@ -630,19 +621,10 @@ func ignoredResponseFields(data CurlResourceModel) []string {
 }
 
 func (r *CurlResource) executeReadRequest(ctx context.Context, data CurlResourceModel) (statusCode int, body string, diags diag.Diagnostics) {
-	useReadTls := !data.ReadCertFile.IsNull() || !data.ReadKeyFile.IsNull() || !data.ReadCaCertFile.IsNull()
-
 	var readTlsConfig *TlsConfig
-	if useReadTls {
+	if needsTlsClient(data.ReadCertFile, data.ReadKeyFile, data.ReadCaCertFile, data.ReadCaCertDirectory, data.ReadSkipTlsVerify) {
 		tflog.Debug(ctx, "Using custom TLS client for Read() operation")
-
-		readTlsConfig = &TlsConfig{
-			CertFile:        data.ReadCertFile.ValueString(),
-			KeyFile:         data.ReadKeyFile.ValueString(),
-			CaCertFile:      data.ReadCaCertFile.ValueString(),
-			CaCertDirectory: data.ReadCaCertDirectory.ValueString(),
-			SkipTlsVerify:   data.ReadSkipTlsVerify.ValueBool(),
-		}
+		readTlsConfig = tlsConfigFromAttrs(data.ReadCertFile, data.ReadKeyFile, data.ReadCaCertFile, data.ReadCaCertDirectory, data.ReadSkipTlsVerify)
 	} else {
 		tflog.Debug(ctx, "Using default HTTP client for Read() operation")
 	}
@@ -864,19 +846,10 @@ func (r *CurlResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	// Build TLS Client if `destroy_*` TLS Arguments Provided
 	var client *http.Client
-	useDestroyTls := !data.DestroyCertFile.IsNull() || !data.DestroyKeyFile.IsNull() || !data.DestroyCaCertFile.IsNull()
-
 	var destroyTlsConfig *TlsConfig
-	if useDestroyTls {
+	if needsTlsClient(data.DestroyCertFile, data.DestroyKeyFile, data.DestroyCaCertFile, data.DestroyCaCertDirectory, data.DestroySkipTlsVerify) {
 		tflog.Debug(ctx, "Using custom TLS client for Destroy() operation")
-
-		destroyTlsConfig = &TlsConfig{
-			CertFile:        data.DestroyCertFile.ValueString(),
-			KeyFile:         data.DestroyKeyFile.ValueString(),
-			CaCertFile:      data.DestroyCaCertFile.ValueString(),
-			CaCertDirectory: data.DestroyCaCertDirectory.ValueString(),
-			SkipTlsVerify:   data.DestroySkipTlsVerify.ValueBool(),
-		}
+		destroyTlsConfig = tlsConfigFromAttrs(data.DestroyCertFile, data.DestroyKeyFile, data.DestroyCaCertFile, data.DestroyCaCertDirectory, data.DestroySkipTlsVerify)
 	} else {
 		tflog.Debug(ctx, "Using default HTTP client for Destroy() operation")
 	}

@@ -143,6 +143,20 @@ type TlsConfig struct {
 	SkipTlsVerify   bool
 }
 
+func needsTlsClient(certFile, keyFile, caCertFile, caCertDirectory types.String, skipTlsVerify types.Bool) bool {
+	return !certFile.IsNull() || !keyFile.IsNull() || !caCertFile.IsNull() || !caCertDirectory.IsNull() || skipTlsVerify.ValueBool()
+}
+
+func tlsConfigFromAttrs(certFile, keyFile, caCertFile, caCertDirectory types.String, skipTlsVerify types.Bool) *TlsConfig {
+	return &TlsConfig{
+		CertFile:        certFile.ValueString(),
+		KeyFile:         keyFile.ValueString(),
+		CaCertFile:      caCertFile.ValueString(),
+		CaCertDirectory: caCertDirectory.ValueString(),
+		SkipTlsVerify:   skipTlsVerify.ValueBool(),
+	}
+}
+
 // defaultTlsConfig returns a default TlsConfig instance.
 func defaultTlsConfig() *TlsConfig {
 	return &TlsConfig{}

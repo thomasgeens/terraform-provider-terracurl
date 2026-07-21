@@ -1,3 +1,9 @@
+## 2.5.4
+
+BUG FIXES:
+
+- Fix `skip_tls_verify` being ignored unless cert-related attributes were also set, restoring v1.x behavior for self-signed certificates. Closes #128.
+
 ## 2.5.3
 
 BUG FIXES:
