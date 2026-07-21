@@ -1,3 +1,10 @@
+## 2.5.2
+
+BUG FIXES:
+
+- Fix drift detection not triggering Terraform plan changes: remote response drift now forces resource replacement via `ModifyPlan` instead of relying on computed `drift_marker` updates during `Read()`. Closes #133.
+- Preserve stored `response` / `sensitive_response` in state when drift is detected during `Read()` until replacement completes.
+
 ## 2.5.1
 
 BUG FIXES:

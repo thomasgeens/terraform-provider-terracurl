@@ -1,0 +1,16 @@
+---
+page_title: "{{ .Name }} {{ .Type }} - {{ .ProviderName }}"
+subcategory: ""
+description: |-
+  TerraCurl request resource
+---
+
+# {{ .Name }} ({{ .Type }})
+
+TerraCurl request resource
+
+## Drift detection
+
+When `skip_read` is `false` and `read_url`, `read_method`, and `read_response_codes` are configured, TerraCurl compares the stored response with the live read response during planning. If the remote state diverges (including an unexpected read HTTP status code), Terraform plans a **replace** (destroy then create) so configuration can be reconciled. Use `ignore_response_fields` to exclude volatile JSON fields from comparison. Drift remediation is replace-only; there is no in-place update of remote state.
+
+{{ .SchemaMarkdown }}
