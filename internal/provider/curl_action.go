@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/actionvalidator"
@@ -192,13 +191,6 @@ func (c *CurlAction) Invoke(ctx context.Context, req action.InvokeRequest, resp 
 
 	tflog.Debug(ctx, fmt.Sprintf("Invoke Action Call: \nURL: %s\nHeaders: %s\nMethod: %s\nRequest Body: %s\n", request.URL.String(), request.Header, request.Method, request.Body))
 
-	var responseCodes []string
-	for _, v := range data.ResponseCodes.Elements() {
-		if strVal, ok := v.(types.String); ok {
-			responseCodes = append(responseCodes, strVal.ValueString())
-		}
-	}
-
 	timeout := 10 * time.Second
 	if !data.Timeout.IsNull() {
 		timeout = time.Duration(data.Timeout.ValueInt64()) * time.Second
@@ -224,7 +216,7 @@ func (c *CurlAction) Invoke(ctx context.Context, req action.InvokeRequest, resp 
 		_, _ = io.Copy(io.Discard, response.Body)
 		_ = response.Body.Close()
 
-		if responseCodeChecker(responseCodes, strconv.Itoa(statusCode)) {
+		if responseCodeChecker(data.ResponseCodes, statusCode) {
 			return
 		}
 

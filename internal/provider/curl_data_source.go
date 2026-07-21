@@ -277,14 +277,7 @@ func (d *CurlDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 			bodyString = "{}"
 		}
 
-		var responseCodes []string
-		for _, v := range data.ResponseCodes.Elements() {
-			if strVal, ok := v.(types.String); ok {
-				responseCodes = append(responseCodes, strVal.ValueString())
-			}
-		}
-
-		if responseCodeChecker(responseCodes, strconv.Itoa(statusCode)) {
+		if responseCodeChecker(data.ResponseCodes, statusCode) {
 			break
 		}
 

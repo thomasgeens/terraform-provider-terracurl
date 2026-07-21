@@ -1,6 +1,8 @@
 package provider
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -54,17 +56,19 @@ func TestSanitizeResponse(t *testing.T) {
 func TestResponseCodeChecker(t *testing.T) {
 	tests := []struct {
 		name     string
-		codes    []string
-		input    string
+		codes    []attr.Value
+		input    int
 		expected bool
 	}{
-		{"Value Present", []string{"200", "404", "500"}, "404", true},
-		{"Value Absent", []string{"200", "500"}, "404", false},
+		{"Value Present", []attr.Value{types.StringValue("200"), types.StringValue("404"), types.StringValue("500")}, 404, true},
+		{"Value Absent", []attr.Value{types.StringValue("200"), types.StringValue("500")}, 404, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := responseCodeChecker(tt.codes, tt.input)
+			var listValue types.List
+			listValue, _ = types.ListValue(types.StringType, tt.codes)
+			result := responseCodeChecker(listValue, tt.input)
 			if result != tt.expected {
 				t.Errorf("Expected %v, got %v", tt.expected, result)
 			}

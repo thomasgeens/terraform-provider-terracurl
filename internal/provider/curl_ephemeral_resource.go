@@ -517,14 +517,7 @@ func (e *EphemeralCurlResource) Open(ctx context.Context, req ephemeral.OpenRequ
 			bodyString = "{}"
 		}
 
-		var responseCodes []string
-		for _, v := range data.ResponseCodes.Elements() {
-			if strVal, ok := v.(types.String); ok {
-				responseCodes = append(responseCodes, strVal.ValueString())
-			}
-		}
-
-		if responseCodeChecker(responseCodes, strconv.Itoa(statusCode)) {
+		if responseCodeChecker(data.ResponseCodes, statusCode) {
 			break
 		}
 
@@ -1171,14 +1164,7 @@ func (e *EphemeralCurlResource) Renew(ctx context.Context, req ephemeral.RenewRe
 			bodyString = "{}"
 		}
 
-		var responseCodes []string
-		for _, v := range privateData.RenewResponseCodes.Elements() {
-			if strVal, ok := v.(types.String); ok {
-				responseCodes = append(responseCodes, strVal.ValueString())
-			}
-		}
-
-		if responseCodeChecker(responseCodes, strconv.Itoa(statusCode)) {
+		if responseCodeChecker(privateData.RenewResponseCodes, statusCode) {
 			break
 		}
 
@@ -1525,19 +1511,10 @@ func (e *EphemeralCurlResource) Close(ctx context.Context, req ephemeral.CloseRe
 			return
 		}
 
-		var expectedCodes []string
 		tflog.Debug(ctx, fmt.Sprintf("private data response code list: %v", privateData.CloseResponseCodes.Elements()))
-		for _, v := range privateData.CloseResponseCodes.Elements() {
-			if strVal, ok := v.(types.String); ok {
-				expectedCodes = append(expectedCodes, strVal.ValueString())
-			}
-		}
-
-		tflog.Debug(ctx, fmt.Sprintf("response code received: %v", statusCode))
-		tflog.Debug(ctx, fmt.Sprintf("expected response code received: %v", expectedCodes))
 
 		// Validate Response Code
-		if responseCodeChecker(expectedCodes, strconv.Itoa(statusCode)) {
+		if responseCodeChecker(privateData.CloseResponseCodes, statusCode) {
 			tflog.Debug(ctx, "Close request completed successfully")
 			break
 		} else {

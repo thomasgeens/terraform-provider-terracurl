@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -115,9 +116,18 @@ func setDataSourceResponseValues(data *CurlDataSourceModel, body string) {
 	)
 }
 
-func responseCodeChecker(s []string, str string) bool {
-	for _, v := range s {
-		if v == str {
+func responseCodeChecker(expectedStatusCodes types.List, receivedStatusCode int) bool {
+	var responseStatusCodes []string
+	for _, v := range expectedStatusCodes.Elements() {
+		if strVal, ok := v.(types.String); ok {
+			responseStatusCodes = append(responseStatusCodes, strVal.ValueString())
+		}
+	}
+
+	receivedStatusCodeAsInt := strconv.Itoa(receivedStatusCode)
+
+	for _, v := range responseStatusCodes {
+		if v == receivedStatusCodeAsInt {
 			return true
 		}
 	}

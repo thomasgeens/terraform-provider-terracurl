@@ -1,3 +1,11 @@
+## 2.5.1
+
+BUG FIXES:
+
+- Honor `read_response_codes` during Read drift detection so unexpected read HTTP status codes are treated as drift.
+- Avoid false post-creation drift when the prior sanitized response is null.
+- Refactor `responseCodeChecker` for simpler call sites across resource, action, and tests. Based on #149 by @JackSlateur.
+
 ## 2.5.0
 
 FEATURES:
