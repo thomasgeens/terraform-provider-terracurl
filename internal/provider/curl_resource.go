@@ -1020,13 +1020,24 @@ func (r *CurlResource) UpgradeState(ctx context.Context) map[int64]resource.Stat
 
 				var oldState CurlResourceModel
 
-				// First, try the normal state extraction
-				diags := req.State.Get(ctx, &oldState)
+				var diags diag.Diagnostics
+				useRawState := req.State == nil
 
-				if diags.HasError() {
-					tflog.Info(ctx, "Direct state extraction failed, attempting to extract values from raw state", map[string]interface{}{
-						"errors": diags.Errors(),
-					})
+				if !useRawState {
+					diags = req.State.Get(ctx, &oldState)
+					if diags.HasError() {
+						useRawState = true
+					}
+				}
+
+				if useRawState {
+					if req.State == nil {
+						tflog.Info(ctx, "Prior state is nil, attempting to extract values from raw state")
+					} else {
+						tflog.Info(ctx, "Direct state extraction failed, attempting to extract values from raw state", map[string]interface{}{
+							"errors": diags.Errors(),
+						})
+					}
 
 					// Try to extract what we can from the raw state
 					if req.RawState != nil && len(req.RawState.JSON) > 0 {
