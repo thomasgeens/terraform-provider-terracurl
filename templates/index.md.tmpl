@@ -42,4 +42,12 @@ See the [Default Headers for Auth Tokens guide](guides/default_headers) for conf
 
 {{ tffile "examples/provider/default_headers_example.tf" }}
 
+## HTTP Digest Authentication
+
+TerraCurl supports HTTP Digest authentication with provider-level `default_digest_auth` and per-operation overrides (`digest_auth`, `read_digest_auth`, `destroy_digest_auth`, and related blocks on data sources, actions, and ephemeral resources).
+
+See the [HTTP Digest Authentication guide](guides/digest_auth) for configuration examples, precedence rules, and destroy guidance.
+
+{{ tffile "examples/provider/digest_auth_example.tf" }}
+
 ## Limitations

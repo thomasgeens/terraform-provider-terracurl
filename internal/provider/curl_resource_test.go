@@ -1031,6 +1031,7 @@ func TestCurlResource_StateUpgrade(t *testing.T) {
 			"ca_cert_file":           schema.StringAttribute{Optional: true},
 			"ca_cert_directory":      schema.StringAttribute{Optional: true},
 			"skip_tls_verify":        schema.BoolAttribute{Optional: true},
+			"digest_auth":            resourceDigestAuthSchema(""),
 			"timeout":                schema.Int64Attribute{Optional: true},
 			"response_codes":         schema.ListAttribute{ElementType: types.StringType, Optional: true},
 			"status_code":            schema.StringAttribute{Computed: true},
@@ -1055,6 +1056,7 @@ func TestCurlResource_StateUpgrade(t *testing.T) {
 			"read_ca_cert_file":      schema.StringAttribute{Optional: true},
 			"read_ca_cert_directory": schema.StringAttribute{Optional: true},
 			"read_skip_tls_verify":   schema.BoolAttribute{Optional: true},
+			"read_digest_auth":       resourceDigestAuthSchema(""),
 			"read_response_codes":    schema.ListAttribute{ElementType: types.StringType, Optional: true},
 
 			// Destroy-related fields
@@ -1069,6 +1071,7 @@ func TestCurlResource_StateUpgrade(t *testing.T) {
 			"destroy_ca_cert_file":       schema.StringAttribute{Optional: true},
 			"destroy_ca_cert_directory":  schema.StringAttribute{Optional: true},
 			"destroy_skip_tls_verify":    schema.BoolAttribute{Optional: true},
+			"destroy_digest_auth":        resourceDigestAuthSchema(""),
 			"destroy_response_codes":     schema.ListAttribute{ElementType: types.StringType, Optional: true},
 			"destroy_timeout":            schema.Int64Attribute{Optional: true},
 			"destroy_max_retry":          schema.Int64Attribute{Optional: true},
@@ -1913,6 +1916,7 @@ func TestCurlResource_Delete_ProviderDefaultHeadersOverridesStaleState(t *testin
 		types.StringNull(),
 		types.StringNull(),
 		providerHeaders,
+		nil,
 	)
 	r := &CurlResource{meta: meta}
 

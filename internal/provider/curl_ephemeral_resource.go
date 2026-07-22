@@ -48,8 +48,9 @@ type CurlEphemeralModel struct {
 	Url               types.String `tfsdk:"url"`
 	Method            types.String `tfsdk:"method"`
 	RequestBody       types.String `tfsdk:"request_body"`
-	Headers           types.Map    `tfsdk:"headers"`
-	RequestParameters types.Map    `tfsdk:"request_parameters"`
+	Headers           types.Map       `tfsdk:"headers"`
+	DigestAuth          *DigestAuthModel `tfsdk:"digest_auth"`
+	RequestParameters types.Map       `tfsdk:"request_parameters"`
 	RequestUrlString  types.String `tfsdk:"request_url_string"`
 	CertFile          types.String `tfsdk:"cert_file"`
 	KeyFile           types.String `tfsdk:"key_file"`
@@ -70,8 +71,9 @@ type CurlEphemeralModel struct {
 	RenewUrl               types.String `tfsdk:"renew_url"`
 	RenewMethod            types.String `tfsdk:"renew_method"`
 	RenewRequestBody       types.String `tfsdk:"renew_request_body"`
-	RenewHeaders           types.Map    `tfsdk:"renew_headers"`
-	RenewRequestParameters types.Map    `tfsdk:"renew_request_parameters"`
+	RenewHeaders           types.Map       `tfsdk:"renew_headers"`
+	RenewDigestAuth        *DigestAuthModel `tfsdk:"renew_digest_auth"`
+	RenewRequestParameters types.Map       `tfsdk:"renew_request_parameters"`
 	RenewRequestUrlString  types.String `tfsdk:"renew_request_url_string"`
 	RenewCertFile          types.String `tfsdk:"renew_cert_file"`
 	RenewKeyFile           types.String `tfsdk:"renew_key_file"`
@@ -90,8 +92,9 @@ type CurlEphemeralModel struct {
 	CloseUrl               types.String `tfsdk:"close_url"`
 	CloseMethod            types.String `tfsdk:"close_method"`
 	CloseRequestBody       types.String `tfsdk:"close_request_body"`
-	CloseHeaders           types.Map    `tfsdk:"close_headers"`
-	CloseRequestParameters types.Map    `tfsdk:"close_request_parameters"`
+	CloseHeaders           types.Map       `tfsdk:"close_headers"`
+	CloseDigestAuth        *DigestAuthModel `tfsdk:"close_digest_auth"`
+	CloseRequestParameters types.Map       `tfsdk:"close_request_parameters"`
 	CloseRequestUrlString  types.String `tfsdk:"close_request_url_string"`
 	CloseCertFile          types.String `tfsdk:"close_cert_file"`
 	CloseKeyFile           types.String `tfsdk:"close_key_file"`
@@ -137,6 +140,7 @@ func (e *EphemeralCurlResource) Schema(ctx context.Context, req ephemeral.Schema
 				Optional:            true,
 				MarkdownDescription: "Map of headers to attach to the API call." + hostHeaderMarkdownSuffix,
 			},
+			"digest_auth": ephemeralDigestAuthSchema("HTTP Digest authentication credentials for the open request. Overrides provider `default_digest_auth` when configured."),
 			"request_parameters": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
@@ -230,6 +234,7 @@ func (e *EphemeralCurlResource) Schema(ctx context.Context, req ephemeral.Schema
 				Optional:            true,
 				MarkdownDescription: "Map of headers to attach to the API call." + hostHeaderMarkdownSuffix,
 			},
+			"renew_digest_auth": ephemeralDigestAuthSchema("HTTP Digest authentication credentials for the renew request. Overrides provider `default_digest_auth` when configured."),
 			"renew_request_parameters": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
@@ -309,6 +314,7 @@ func (e *EphemeralCurlResource) Schema(ctx context.Context, req ephemeral.Schema
 				Optional:            true,
 				MarkdownDescription: "Map of headers to attach to the API call." + hostHeaderMarkdownSuffix,
 			},
+			"close_digest_auth": ephemeralDigestAuthSchema("HTTP Digest authentication credentials for the close request. Overrides provider `default_digest_auth` when configured."),
 			"close_request_parameters": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
@@ -439,7 +445,7 @@ func (e *EphemeralCurlResource) Open(ctx context.Context, req ephemeral.OpenRequ
 		}
 	}
 
-	client, err = e.providerMeta().NewHTTPClient(tlsConfig)
+	client, err = e.providerMeta().NewHTTPClient(tlsConfig, e.providerMeta().ResolveDigestAuth(data.DigestAuth))
 	if err != nil {
 		resp.Diagnostics.AddError("HTTP Client Creation Failed", err.Error())
 		return
@@ -540,6 +546,7 @@ func (e *EphemeralCurlResource) Open(ctx context.Context, req ephemeral.OpenRequ
 		"Method":            data.Method.ValueString(),
 		"RequestBody":       data.RequestBody.ValueString(),
 		"Headers":           convertMap(data.Headers),
+		"DigestAuth":        digestAuthToPrivateMap(data.DigestAuth),
 		"RequestParameters": convertMap(data.RequestParameters),
 		"RequestUrlString":  data.RequestUrlString.ValueString(),
 		"CertFile":          data.CertFile.ValueString(),
@@ -559,6 +566,7 @@ func (e *EphemeralCurlResource) Open(ctx context.Context, req ephemeral.OpenRequ
 		"RenewUrl":               data.RenewUrl.ValueString(),
 		"RenewMethod":            data.RenewMethod.ValueString(),
 		"RenewHeaders":           convertMap(data.RenewHeaders),
+		"RenewDigestAuth":        digestAuthToPrivateMap(data.RenewDigestAuth),
 		"RenewRequestParameters": convertMap(data.RenewRequestParameters),
 		"RenewRequestBody":       data.RenewRequestBody.ValueString(),
 		"RenewRequestUrlString":  data.RenewRequestUrlString.ValueString(),
@@ -578,6 +586,7 @@ func (e *EphemeralCurlResource) Open(ctx context.Context, req ephemeral.OpenRequ
 		"CloseUrl":               data.CloseUrl.ValueString(),
 		"CloseMethod":            data.CloseMethod.ValueString(),
 		"CloseHeaders":           convertMap(data.CloseHeaders),
+		"CloseDigestAuth":        digestAuthToPrivateMap(data.CloseDigestAuth),
 		"CloseRequestParameters": convertMap(data.CloseRequestParameters),
 		"CloseRequestBody":       data.CloseRequestBody.ValueString(),
 		"CloseRequestUrlString":  data.CloseRequestUrlString.ValueString(),
@@ -1086,7 +1095,10 @@ func (e *EphemeralCurlResource) Renew(ctx context.Context, req ephemeral.RenewRe
 		tflog.Debug(ctx, "using default client for renew call")
 	}
 
-	client, err = e.providerMeta().NewHTTPClient(tlsConfig)
+	renewDigestAuth := digestAuthFromPrivateMap(privateMap["RenewDigestAuth"])
+	privateData.RenewDigestAuth = renewDigestAuth
+
+	client, err = e.providerMeta().NewHTTPClient(tlsConfig, e.providerMeta().ResolveDigestAuth(renewDigestAuth))
 	if err != nil {
 		resp.Diagnostics.AddError("HTTP Client Creation Failed", err.Error())
 		return
@@ -1432,7 +1444,8 @@ func (e *EphemeralCurlResource) Close(ctx context.Context, req ephemeral.CloseRe
 		tflog.Debug(ctx, "Using default HTTP client for Close() operation")
 	}
 
-	client, err = e.providerMeta().NewHTTPClient(closeTlsConfig)
+	closeDigestAuth := digestAuthFromPrivateMap(privateMap["CloseDigestAuth"])
+	client, err = e.providerMeta().NewHTTPClient(closeTlsConfig, e.providerMeta().ResolveDigestAuth(closeDigestAuth))
 	if err != nil {
 		resp.Diagnostics.AddError("Close Error", fmt.Sprintf("Failed to create HTTP client: %s", err))
 		return

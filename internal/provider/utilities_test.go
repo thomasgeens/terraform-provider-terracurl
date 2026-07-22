@@ -84,23 +84,23 @@ func TestCreateTlsClient(t *testing.T) {
 
 	t.Run("Default Config", func(t *testing.T) {
 		cfg := defaultTlsConfig()
-		client, err := createTlsClient(cfg, proxyForRequest)
+		transport, err := buildTlsTransport(cfg, proxyForRequest)
 		if err != nil {
 			t.Errorf("Unexpected error: %v", err)
 		}
-		if client == nil {
-			t.Error("Expected non-nil HTTP client")
+		if transport == nil {
+			t.Error("Expected non-nil transport")
 		}
 	})
 
 	t.Run("Invalid Cert File", func(t *testing.T) {
 		cfg := &TlsConfig{CertFile: "nonexistent.pem", KeyFile: "nonexistent-key.pem"}
-		client, err := createTlsClient(cfg, proxyForRequest)
+		transport, err := buildTlsTransport(cfg, proxyForRequest)
 		if err == nil {
 			t.Error("Expected error for invalid cert file, got nil")
 		}
-		if client != nil {
-			t.Error("Expected nil client on failure")
+		if transport != nil {
+			t.Error("Expected nil transport on failure")
 		}
 	})
 }
@@ -114,12 +114,13 @@ func TestTlsClientRequests(t *testing.T) {
 
 	cfg := &TlsConfig{SkipTlsVerify: true}
 	proxy := httpproxy.FromEnvironment().ProxyFunc()
-	client, err := createTlsClient(cfg, func(req *http.Request) (*url.URL, error) {
+	transport, err := buildTlsTransport(cfg, func(req *http.Request) (*url.URL, error) {
 		return proxy(req.URL)
 	})
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
+	client := &http.Client{Transport: transport}
 
 	resp, err := client.Get(server.URL)
 	if err != nil {

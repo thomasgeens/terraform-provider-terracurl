@@ -52,8 +52,9 @@ type CurlResourceModel struct {
 	Url                      types.String `tfsdk:"url"`
 	Method                   types.String `tfsdk:"method"`
 	RequestBody              types.String `tfsdk:"request_body"`
-	Headers                  types.Map    `tfsdk:"headers"`
-	RequestParameters        types.Map    `tfsdk:"request_parameters"`
+	Headers                  types.Map        `tfsdk:"headers"`
+	DigestAuth                 *DigestAuthModel `tfsdk:"digest_auth"`
+	RequestParameters        types.Map        `tfsdk:"request_parameters"`
 	RequestUrlString         types.String `tfsdk:"request_url_string"`
 	CertFile                 types.String `tfsdk:"cert_file"`
 	KeyFile                  types.String `tfsdk:"key_file"`
@@ -72,8 +73,9 @@ type CurlResourceModel struct {
 	DestroyUrl               types.String `tfsdk:"destroy_url"`
 	DestroyMethod            types.String `tfsdk:"destroy_method"`
 	DestroyRequestBody       types.String `tfsdk:"destroy_request_body"`
-	DestroyHeaders           types.Map    `tfsdk:"destroy_headers"`
-	DestroyRequestParameters types.Map    `tfsdk:"destroy_request_parameters"`
+	DestroyHeaders           types.Map        `tfsdk:"destroy_headers"`
+	DestroyDigestAuth        *DigestAuthModel `tfsdk:"destroy_digest_auth"`
+	DestroyRequestParameters types.Map        `tfsdk:"destroy_request_parameters"`
 	DestroyRequestUrlString  types.String `tfsdk:"destroy_request_url_string"`
 	DestroyCertFile          types.String `tfsdk:"destroy_cert_file"`
 	DestroyKeyFile           types.String `tfsdk:"destroy_key_file"`
@@ -87,8 +89,9 @@ type CurlResourceModel struct {
 	SkipRead                 types.Bool   `tfsdk:"skip_read"`
 	ReadUrl                  types.String `tfsdk:"read_url"`
 	ReadMethod               types.String `tfsdk:"read_method"`
-	ReadHeaders              types.Map    `tfsdk:"read_headers"`
-	ReadParameters           types.Map    `tfsdk:"read_parameters"`
+	ReadHeaders              types.Map        `tfsdk:"read_headers"`
+	ReadDigestAuth           *DigestAuthModel `tfsdk:"read_digest_auth"`
+	ReadParameters           types.Map        `tfsdk:"read_parameters"`
 	ReadRequestBody          types.String `tfsdk:"read_request_body"`
 	ReadCertFile             types.String `tfsdk:"read_cert_file"`
 	ReadKeyFile              types.String `tfsdk:"read_key_file"`
@@ -150,6 +153,7 @@ func (r *CurlResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 					mapplanmodifier.RequiresReplace(),
 				},
 			},
+			"digest_auth": resourceDigestAuthSchema("HTTP Digest authentication credentials for the create request. Overrides provider `default_digest_auth` when configured."),
 			"request_parameters": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
@@ -274,6 +278,7 @@ func (r *CurlResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 					mapplanmodifier.RequiresReplace(),
 				},
 			},
+			"destroy_digest_auth": resourceDigestAuthSchema("HTTP Digest authentication credentials for the destroy request. Overrides provider `default_digest_auth` when configured."),
 			"destroy_request_parameters": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
@@ -363,6 +368,7 @@ func (r *CurlResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				Optional:            true,
 				MarkdownDescription: "Map of headers for the read request." + hostHeaderMarkdownSuffix,
 			},
+			"read_digest_auth": resourceDigestAuthSchema("HTTP Digest authentication credentials for the read request. Overrides provider `default_digest_auth` when configured."),
 
 			"read_request_body": schema.StringAttribute{
 				Optional:            true,
@@ -501,7 +507,7 @@ func (r *CurlResource) Create(ctx context.Context, req resource.CreateRequest, r
 		}
 	}
 
-	client, err = r.providerMeta().NewHTTPClient(tlsConfig)
+	client, err = r.providerMeta().NewHTTPClient(tlsConfig, r.providerMeta().ResolveDigestAuth(data.DigestAuth))
 	if err != nil {
 		resp.Diagnostics.AddError("HTTP Client Creation Failed", err.Error())
 		return
@@ -629,7 +635,7 @@ func (r *CurlResource) executeReadRequest(ctx context.Context, data CurlResource
 		tflog.Debug(ctx, "Using default HTTP client for Read() operation")
 	}
 
-	client, err := r.providerMeta().NewHTTPClient(readTlsConfig)
+	client, err := r.providerMeta().NewHTTPClient(readTlsConfig, r.providerMeta().ResolveDigestAuth(data.ReadDigestAuth))
 	if err != nil {
 		diags.AddError("Read Error", fmt.Sprintf("Failed to create HTTP client: %s", err))
 		return
@@ -854,7 +860,7 @@ func (r *CurlResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		tflog.Debug(ctx, "Using default HTTP client for Destroy() operation")
 	}
 
-	client, err := r.providerMeta().NewHTTPClient(destroyTlsConfig)
+	client, err := r.providerMeta().NewHTTPClient(destroyTlsConfig, r.providerMeta().ResolveDigestAuth(data.DestroyDigestAuth))
 	if err != nil {
 		resp.Diagnostics.AddError("Destroy Error", fmt.Sprintf("Failed to create HTTP client: %s", err))
 		return

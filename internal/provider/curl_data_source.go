@@ -35,8 +35,9 @@ type CurlDataSourceModel struct {
 	Url               types.String `tfsdk:"url"`
 	Method            types.String `tfsdk:"method"`
 	RequestBody       types.String `tfsdk:"request_body"`
-	Headers           types.Map    `tfsdk:"headers"`
-	RequestParameters types.Map    `tfsdk:"request_parameters"`
+	Headers           types.Map       `tfsdk:"headers"`
+	DigestAuth          *DigestAuthModel `tfsdk:"digest_auth"`
+	RequestParameters types.Map       `tfsdk:"request_parameters"`
 	RequestUrlString  types.String `tfsdk:"request_url_string"`
 	CertFile          types.String `tfsdk:"cert_file"`
 	KeyFile           types.String `tfsdk:"key_file"`
@@ -86,6 +87,7 @@ func (d *CurlDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 				Optional:            true,
 				MarkdownDescription: "Map of headers to attach to the API call." + hostHeaderMarkdownSuffix,
 			},
+			"digest_auth": dataSourceDigestAuthSchema("HTTP Digest authentication credentials for the request. Overrides provider `default_digest_auth` when configured."),
 			"request_parameters": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
@@ -200,7 +202,7 @@ func (d *CurlDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		}
 	}
 
-	client, err = d.providerMeta().NewHTTPClient(tlsConfig)
+	client, err = d.providerMeta().NewHTTPClient(tlsConfig, d.providerMeta().ResolveDigestAuth(data.DigestAuth))
 	if err != nil {
 		resp.Diagnostics.AddError("HTTP Client Creation Failed", err.Error())
 		return

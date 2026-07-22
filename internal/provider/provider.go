@@ -30,10 +30,11 @@ type TerraCurlProvider struct {
 
 // TerraCurlProviderModel describes the provider data model.
 type TerraCurlProviderModel struct {
-	HttpProxy      types.String `tfsdk:"http_proxy"`
-	HttpsProxy     types.String `tfsdk:"https_proxy"`
-	NoProxy        types.String `tfsdk:"no_proxy"`
-	DefaultHeaders types.Map    `tfsdk:"default_headers"`
+	HttpProxy         types.String    `tfsdk:"http_proxy"`
+	HttpsProxy        types.String    `tfsdk:"https_proxy"`
+	NoProxy           types.String    `tfsdk:"no_proxy"`
+	DefaultHeaders    types.Map       `tfsdk:"default_headers"`
+	DefaultDigestAuth *DigestAuthModel `tfsdk:"default_digest_auth"`
 }
 
 func (p *TerraCurlProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -63,6 +64,7 @@ func (p *TerraCurlProvider) Schema(ctx context.Context, req provider.SchemaReque
 				Optional:            true,
 				Sensitive:           true,
 			},
+			"default_digest_auth": providerDigestAuthSchema(),
 		},
 	}
 }
@@ -76,7 +78,7 @@ func (p *TerraCurlProvider) Configure(ctx context.Context, req provider.Configur
 		return
 	}
 
-	meta := NewProviderMeta(data.HttpProxy, data.HttpsProxy, data.NoProxy, data.DefaultHeaders)
+	meta := NewProviderMeta(data.HttpProxy, data.HttpsProxy, data.NoProxy, data.DefaultHeaders, data.DefaultDigestAuth)
 	resp.DataSourceData = meta
 	resp.ResourceData = meta
 	resp.EphemeralResourceData = meta
