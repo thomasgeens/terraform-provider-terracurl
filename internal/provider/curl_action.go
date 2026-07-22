@@ -169,7 +169,7 @@ func (c *CurlAction) Invoke(ctx context.Context, req action.InvokeRequest, resp 
 		return
 	}
 
-	applyRequestHeaders(request, data.Headers)
+	applyRequestHeadersWithDefaults(request, data.Headers, c.providerMeta())
 
 	if !data.RequestParameters.IsNull() && !data.RequestParameters.IsUnknown() {
 		params := request.URL.Query()

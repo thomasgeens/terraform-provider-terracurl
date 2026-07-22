@@ -214,7 +214,7 @@ func (d *CurlDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	}
 
 	// Add headers.
-	applyRequestHeaders(request, data.Headers)
+	applyRequestHeadersWithDefaults(request, data.Headers, d.providerMeta())
 
 	// Add query parameters.
 	if !data.RequestParameters.IsNull() && !data.RequestParameters.IsUnknown() {

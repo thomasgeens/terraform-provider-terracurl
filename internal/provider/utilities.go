@@ -164,7 +164,8 @@ func defaultTlsConfig() *TlsConfig {
 
 // ProviderMeta carries provider-level configuration passed to resources and data sources.
 type ProviderMeta struct {
-	proxyFunc func(*url.URL) (*url.URL, error)
+	proxyFunc      func(*url.URL) (*url.URL, error)
+	defaultHeaders map[string]string
 }
 
 // DefaultProviderMeta returns provider metadata that uses only environment-based proxy settings.
@@ -176,7 +177,7 @@ func DefaultProviderMeta() *ProviderMeta {
 
 // NewProviderMeta builds provider metadata, merging optional provider proxy settings with
 // environment variables. Explicitly set provider attributes override environment values.
-func NewProviderMeta(httpProxy, httpsProxy, noProxy types.String) *ProviderMeta {
+func NewProviderMeta(httpProxy, httpsProxy, noProxy types.String, defaultHeaders types.Map) *ProviderMeta {
 	cfg := httpproxy.FromEnvironment()
 	if !httpProxy.IsNull() {
 		cfg.HTTPProxy = httpProxy.ValueString()
@@ -187,7 +188,18 @@ func NewProviderMeta(httpProxy, httpsProxy, noProxy types.String) *ProviderMeta 
 	if !noProxy.IsNull() {
 		cfg.NoProxy = noProxy.ValueString()
 	}
-	return &ProviderMeta{proxyFunc: cfg.ProxyFunc()}
+	return &ProviderMeta{
+		proxyFunc:      cfg.ProxyFunc(),
+		defaultHeaders: convertMap(defaultHeaders),
+	}
+}
+
+// DefaultHeaders returns provider-level headers applied to every outbound request.
+func (m *ProviderMeta) DefaultHeaders() map[string]string {
+	if m == nil || len(m.defaultHeaders) == 0 {
+		return nil
+	}
+	return m.defaultHeaders
 }
 
 func (m *ProviderMeta) requestProxy(req *http.Request) (*url.URL, error) {
@@ -322,11 +334,25 @@ func applyRequestHeaders(req *http.Request, headers types.Map) {
 
 	for k, v := range headers.Elements() {
 		if strVal, ok := v.(types.String); ok {
-			if strings.EqualFold(k, "host") {
-				req.Host = strVal.ValueString()
-				continue
-			}
-			req.Header.Set(k, strVal.ValueString())
+			setRequestHeader(req, k, strVal.ValueString())
 		}
+	}
+}
+
+func setRequestHeader(req *http.Request, key, value string) {
+	if strings.EqualFold(key, "host") {
+		req.Host = value
+		return
+	}
+	req.Header.Set(key, value)
+}
+
+func applyRequestHeadersWithDefaults(req *http.Request, headers types.Map, meta *ProviderMeta) {
+	applyRequestHeaders(req, headers)
+	if meta == nil {
+		return
+	}
+	for k, v := range meta.DefaultHeaders() {
+		setRequestHeader(req, k, v)
 	}
 }

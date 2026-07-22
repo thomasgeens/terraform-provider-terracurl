@@ -1887,3 +1887,79 @@ func TestCurlResource_StateUpgrade_NilRequestState(t *testing.T) {
 		t.Error("Expected response_sensitive to default to false")
 	}
 }
+
+func TestCurlResource_Delete_ProviderDefaultHeadersOverridesStaleState(t *testing.T) {
+	t.Setenv("USE_DEFAULT_CLIENT_FOR_TESTS", "true")
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+
+	var receivedAuth string
+	httpmock.RegisterResponder(
+		"DELETE",
+		"https://example.com/destroy",
+		func(req *http.Request) (*http.Response, error) {
+			receivedAuth = req.Header.Get("Authorization")
+			return httpmock.NewStringResponse(200, `{"deleted":true}`), nil
+		},
+	)
+
+	ctx := context.Background()
+	providerHeaders := types.MapValueMust(types.StringType, map[string]attr.Value{
+		"Authorization": types.StringValue("Bearer fresh"),
+	})
+	meta := NewProviderMeta(
+		types.StringNull(),
+		types.StringNull(),
+		types.StringNull(),
+		providerHeaders,
+	)
+	r := &CurlResource{meta: meta}
+
+	schemaResp := &resource2.SchemaResponse{}
+	r.Schema(ctx, resource2.SchemaRequest{}, schemaResp)
+
+	stateModel := CurlResourceModel{
+		Id:                   types.StringValue("test"),
+		Name:                 types.StringValue("test"),
+		Url:                  types.StringValue("https://example.com/create"),
+		Method:               types.StringValue("POST"),
+		SkipRead:             types.BoolValue(true),
+		SkipDestroy:          types.BoolValue(false),
+		DestroyUrl:           types.StringValue("https://example.com/destroy"),
+		DestroyMethod:        types.StringValue("DELETE"),
+		DestroyResponseCodes: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("200")}),
+		DestroyHeaders: types.MapValueMust(types.StringType, map[string]attr.Value{
+			"Authorization": types.StringValue("Bearer stale"),
+			"Content-Type":  types.StringValue("application/json"),
+		}),
+		DestroyTimeout:           types.Int64Value(10),
+		DestroyRetryInterval:     types.Int64Value(1),
+		DestroyMaxRetry:          types.Int64Value(0),
+		ResponseCodes:            types.ListValueMust(types.StringType, []attr.Value{types.StringValue("200")}),
+		ReadResponseCodes:        types.ListNull(types.StringType),
+		IgnoreResponseFields:     types.ListNull(types.StringType),
+		Headers:                  types.MapNull(types.StringType),
+		RequestParameters:        types.MapNull(types.StringType),
+		ReadHeaders:              types.MapNull(types.StringType),
+		ReadParameters:           types.MapNull(types.StringType),
+		DestroyRequestParameters: types.MapNull(types.StringType),
+	}
+
+	state := tfsdk.State{Schema: schemaResp.Schema}
+	if diags := state.Set(ctx, &stateModel); diags.HasError() {
+		t.Fatalf("failed to set state: %v", diags)
+	}
+
+	deleteResp := &resource2.DeleteResponse{
+		State: state,
+	}
+	r.Delete(ctx, resource2.DeleteRequest{State: state}, deleteResp)
+	if deleteResp.Diagnostics.HasError() {
+		t.Fatalf("Delete failed: %v", deleteResp.Diagnostics)
+	}
+
+	if receivedAuth != "Bearer fresh" {
+		t.Fatalf("expected destroy to use fresh provider Authorization header, got %q", receivedAuth)
+	}
+}
