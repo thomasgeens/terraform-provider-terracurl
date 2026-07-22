@@ -27,6 +27,7 @@ TerraCurl request data source
 - `ca_cert_directory` (String) Path to a directory on local disk that contains one or more certificate files that will be used to validate the certificate presented by the server
 - `ca_cert_file` (String) Path to a file on local disk that will be used to validate the certificate presented by the server
 - `cert_file` (String) Path to a file on local disk that contains the PEM-encoded certificate to present to the server
+- `digest_auth` (Attributes, Sensitive) HTTP Digest authentication credentials for the request. Overrides provider `default_digest_auth` when configured. (see [below for nested schema](#nestedatt--digest_auth))
 - `headers` (Map of String) Map of headers to attach to the API call. Host (case-insensitive) overrides the HTTP Host header sent on the wire, independent of the URL hostname.
 - `key_file` (String) Path to a file on local disk that contains the PEM-encoded private key for which the authentication certificate was issued
 - `max_retry` (Number) Maximum number of tries until it is marked as failed
@@ -44,3 +45,11 @@ TerraCurl request data source
 - `response` (String) JSON response received from request. Empty when `response_sensitive` is `true`; use `sensitive_response` instead.
 - `sensitive_response` (String, Sensitive) JSON response received from request, marked as sensitive so it is not displayed in plan output. Populated only when `response_sensitive` is `true`.
 - `status_code` (String) Response status code received from request
+
+<a id="nestedatt--digest_auth"></a>
+### Nested Schema for `digest_auth`
+
+Required:
+
+- `password` (String, Sensitive) Password for HTTP Digest authentication.
+- `username` (String, Sensitive) Username for HTTP Digest authentication.

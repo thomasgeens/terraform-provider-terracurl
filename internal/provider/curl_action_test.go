@@ -96,19 +96,27 @@ func providerWithActions(ctx context.Context, t *testing.T) tfprotov6.ProviderSe
 			"https_proxy":     tftypes.String,
 			"no_proxy":        tftypes.String,
 			"default_headers": tftypes.Map{ElementType: tftypes.String},
+			"default_digest_auth": tftypes.Object{
+				AttributeTypes: map[string]tftypes.Type{
+					"username": tftypes.String,
+					"password": tftypes.String,
+				},
+			},
 		},
 		OptionalAttributes: map[string]struct{}{
-			"http_proxy":      {},
-			"https_proxy":     {},
-			"no_proxy":        {},
-			"default_headers": {},
+			"http_proxy":          {},
+			"https_proxy":         {},
+			"no_proxy":            {},
+			"default_headers":     {},
+			"default_digest_auth": {},
 		},
 	}
 	providerConfigValue := tftypes.NewValue(providerConfigType, map[string]tftypes.Value{
-		"http_proxy":      tftypes.NewValue(tftypes.String, nil),
-		"https_proxy":     tftypes.NewValue(tftypes.String, nil),
-		"no_proxy":        tftypes.NewValue(tftypes.String, nil),
-		"default_headers": tftypes.NewValue(tftypes.Map{ElementType: tftypes.String}, nil),
+		"http_proxy":          tftypes.NewValue(tftypes.String, nil),
+		"https_proxy":         tftypes.NewValue(tftypes.String, nil),
+		"no_proxy":            tftypes.NewValue(tftypes.String, nil),
+		"default_headers":     tftypes.NewValue(tftypes.Map{ElementType: tftypes.String}, nil),
+		"default_digest_auth": tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{"username": tftypes.String, "password": tftypes.String}}, nil),
 	})
 	configValue, err := tfprotov6.NewDynamicValue(providerConfigType, providerConfigValue)
 	if err != nil {
@@ -132,9 +140,15 @@ func providerWithActions(ctx context.Context, t *testing.T) tfprotov6.ProviderSe
 func buildRequestActionConfig(url string, responseCodes []string, headers map[string]string) (tftypes.Type, map[string]tftypes.Value) {
 	configType := tftypes.Object{
 		AttributeTypes: map[string]tftypes.Type{
-			"ca_cert_directory":  tftypes.String,
-			"ca_cert_file":       tftypes.String,
-			"cert_file":          tftypes.String,
+			"ca_cert_directory": tftypes.String,
+			"ca_cert_file":      tftypes.String,
+			"cert_file":         tftypes.String,
+			"digest_auth": tftypes.Object{
+				AttributeTypes: map[string]tftypes.Type{
+					"username": tftypes.String,
+					"password": tftypes.String,
+				},
+			},
 			"headers":            tftypes.Map{ElementType: tftypes.String},
 			"key_file":           tftypes.String,
 			"max_retry":          tftypes.Number,
@@ -151,6 +165,7 @@ func buildRequestActionConfig(url string, responseCodes []string, headers map[st
 			"ca_cert_directory":  {},
 			"ca_cert_file":       {},
 			"cert_file":          {},
+			"digest_auth":        {},
 			"headers":            {},
 			"key_file":           {},
 			"max_retry":          {},
@@ -173,9 +188,13 @@ func buildRequestActionConfig(url string, responseCodes []string, headers map[st
 	}
 
 	config := map[string]tftypes.Value{
-		"ca_cert_directory":  tftypes.NewValue(tftypes.String, nil),
-		"ca_cert_file":       tftypes.NewValue(tftypes.String, nil),
-		"cert_file":          tftypes.NewValue(tftypes.String, nil),
+		"ca_cert_directory": tftypes.NewValue(tftypes.String, nil),
+		"ca_cert_file":      tftypes.NewValue(tftypes.String, nil),
+		"cert_file":         tftypes.NewValue(tftypes.String, nil),
+		"digest_auth": tftypes.NewValue(tftypes.Object{AttributeTypes: map[string]tftypes.Type{
+			"username": tftypes.String,
+			"password": tftypes.String,
+		}}, nil),
 		"headers":            tftypes.NewValue(tftypes.Map{ElementType: tftypes.String}, headerValues),
 		"key_file":           tftypes.NewValue(tftypes.String, nil),
 		"max_retry":          tftypes.NewValue(tftypes.Number, nil),

@@ -31,6 +31,7 @@ When `skip_read` is `false` and `read_url`, `read_method`, and `read_response_co
 - `destroy_ca_cert_directory` (String) Path to a directory on local disk that contains one or more certificate files that will be used to validate the certificate presented by the server for the destroy call
 - `destroy_ca_cert_file` (String) Path to a file on local disk that will be used to validate the certificate presented by the server for the destroy call
 - `destroy_cert_file` (String) Path to a file on local disk that contains the PEM-encoded certificate to present to the server for the destroy call
+- `destroy_digest_auth` (Attributes, Sensitive) HTTP Digest authentication credentials for the destroy request. Overrides provider `default_digest_auth` when configured. (see [below for nested schema](#nestedatt--destroy_digest_auth))
 - `destroy_headers` (Map of String) Map of headers to attach to the destroy API call. Host (case-insensitive) overrides the HTTP Host header sent on the wire, independent of the URL hostname.
 - `destroy_key_file` (String) Path to a file on local disk that contains the PEM-encoded private key for which the authentication certificate was issued for the destroy call
 - `destroy_max_retry` (Number) Maximum number of tries until it is marked as failed for the destroy call
@@ -42,6 +43,7 @@ When `skip_read` is `false` and `read_url`, `read_method`, and `read_response_co
 - `destroy_skip_tls_verify` (Boolean) Set this to true to disable verification of the server's TLS certificate for the destroy call
 - `destroy_timeout` (Number) Time in seconds before each request times out for the destroy call. Defaults to 10
 - `destroy_url` (String) Destroy API endpoint to call
+- `digest_auth` (Attributes, Sensitive) HTTP Digest authentication credentials for the create request. Overrides provider `default_digest_auth` when configured. (see [below for nested schema](#nestedatt--digest_auth))
 - `headers` (Map of String) Map of headers to attach to the API call. Host (case-insensitive) overrides the HTTP Host header sent on the wire, independent of the URL hostname.
 - `ignore_response_fields` (List of String) List of JSON fields to ignore during drift detection.
 - `key_file` (String) Path to a file on local disk that contains the PEM-encoded private key for which the authentication certificate was issued
@@ -49,6 +51,7 @@ When `skip_read` is `false` and `read_url`, `read_method`, and `read_response_co
 - `read_ca_cert_directory` (String) Path to a PEM-encoded CA certificate for the read request (TLS).
 - `read_ca_cert_file` (String) Path to a PEM-encoded CA certificate for the read request (TLS).
 - `read_cert_file` (String) Path to a PEM-encoded certificate for the read request (TLS).
+- `read_digest_auth` (Attributes, Sensitive) HTTP Digest authentication credentials for the read request. Overrides provider `default_digest_auth` when configured. (see [below for nested schema](#nestedatt--read_digest_auth))
 - `read_headers` (Map of String) Map of headers for the read request. Host (case-insensitive) overrides the HTTP Host header sent on the wire, independent of the URL hostname.
 - `read_key_file` (String) Path to a PEM-encoded private key for the read request (TLS).
 - `read_method` (String) HTTP method for reading resource state. Required if `skip_read` is false.
@@ -75,5 +78,32 @@ When `skip_read` is `false` and `read_url`, `read_method`, and `read_response_co
 - `response` (String) JSON response received from request. Empty when `response_sensitive` is `true`; use `sensitive_response` instead.
 - `sensitive_response` (String, Sensitive) JSON response received from request, marked as sensitive so it is not displayed in plan output. Populated only when `response_sensitive` is `true`.
 - `status_code` (String) Response status code received from request
+
+<a id="nestedatt--destroy_digest_auth"></a>
+### Nested Schema for `destroy_digest_auth`
+
+Required:
+
+- `password` (String, Sensitive) Password for HTTP Digest authentication.
+- `username` (String, Sensitive) Username for HTTP Digest authentication.
+
+
+<a id="nestedatt--digest_auth"></a>
+### Nested Schema for `digest_auth`
+
+Required:
+
+- `password` (String, Sensitive) Password for HTTP Digest authentication.
+- `username` (String, Sensitive) Username for HTTP Digest authentication.
+
+
+<a id="nestedatt--read_digest_auth"></a>
+### Nested Schema for `read_digest_auth`
+
+Required:
+
+- `password` (String, Sensitive) Password for HTTP Digest authentication.
+- `username` (String, Sensitive) Username for HTTP Digest authentication.
+
 
 

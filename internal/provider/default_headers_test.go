@@ -19,6 +19,7 @@ func TestNewProviderMetaDefaultHeaders(t *testing.T) {
 		types.StringNull(),
 		types.StringNull(),
 		headers,
+		nil,
 	)
 
 	got := meta.DefaultHeaders()
@@ -36,6 +37,7 @@ func TestNewProviderMetaNullDefaultHeaders(t *testing.T) {
 		types.StringNull(),
 		types.StringNull(),
 		types.MapNull(types.StringType),
+		nil,
 	)
 
 	if meta.DefaultHeaders() != nil {
@@ -61,6 +63,7 @@ func TestApplyRequestHeadersWithDefaultsOverridesResourceHeaders(t *testing.T) {
 		types.StringNull(),
 		types.StringNull(),
 		providerHeaders,
+		nil,
 	)
 
 	applyRequestHeadersWithDefaults(req, resourceHeaders, meta)
@@ -90,6 +93,7 @@ func TestApplyRequestHeadersWithDefaultsHostOverride(t *testing.T) {
 		types.StringNull(),
 		types.StringNull(),
 		providerHeaders,
+		nil,
 	)
 
 	applyRequestHeadersWithDefaults(req, resourceHeaders, meta)

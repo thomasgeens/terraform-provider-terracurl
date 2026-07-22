@@ -1,3 +1,9 @@
+## 2.7.0
+
+ENHANCEMENTS:
+
+- Add HTTP Digest authentication with provider `default_digest_auth` and per-operation overrides on resources, data sources, actions, and ephemeral resources. Closes #58.
+
 ## 2.6.0
 
 ENHANCEMENTS:

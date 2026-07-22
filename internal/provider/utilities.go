@@ -164,8 +164,9 @@ func defaultTlsConfig() *TlsConfig {
 
 // ProviderMeta carries provider-level configuration passed to resources and data sources.
 type ProviderMeta struct {
-	proxyFunc      func(*url.URL) (*url.URL, error)
-	defaultHeaders map[string]string
+	proxyFunc         func(*url.URL) (*url.URL, error)
+	defaultHeaders    map[string]string
+	defaultDigestAuth *DigestAuthConfig
 }
 
 // DefaultProviderMeta returns provider metadata that uses only environment-based proxy settings.
@@ -177,7 +178,7 @@ func DefaultProviderMeta() *ProviderMeta {
 
 // NewProviderMeta builds provider metadata, merging optional provider proxy settings with
 // environment variables. Explicitly set provider attributes override environment values.
-func NewProviderMeta(httpProxy, httpsProxy, noProxy types.String, defaultHeaders types.Map) *ProviderMeta {
+func NewProviderMeta(httpProxy, httpsProxy, noProxy types.String, defaultHeaders types.Map, defaultDigestAuth *DigestAuthModel) *ProviderMeta {
 	cfg := httpproxy.FromEnvironment()
 	if !httpProxy.IsNull() {
 		cfg.HTTPProxy = httpProxy.ValueString()
@@ -188,10 +189,28 @@ func NewProviderMeta(httpProxy, httpsProxy, noProxy types.String, defaultHeaders
 	if !noProxy.IsNull() {
 		cfg.NoProxy = noProxy.ValueString()
 	}
-	return &ProviderMeta{
-		proxyFunc:      cfg.ProxyFunc(),
-		defaultHeaders: convertMap(defaultHeaders),
+	var parsedDigestAuth *DigestAuthConfig
+	if defaultDigestAuth != nil {
+		parsedDigestAuth = parseDigestAuthConfig(defaultDigestAuth)
 	}
+	return &ProviderMeta{
+		proxyFunc:         cfg.ProxyFunc(),
+		defaultHeaders:    convertMap(defaultHeaders),
+		defaultDigestAuth: parsedDigestAuth,
+	}
+}
+
+// DefaultDigestAuth returns provider-level digest credentials.
+func (m *ProviderMeta) DefaultDigestAuth() *DigestAuthConfig {
+	if m == nil || m.defaultDigestAuth == nil {
+		return nil
+	}
+	return m.defaultDigestAuth
+}
+
+// ResolveDigestAuth returns operation-specific digest auth when configured, otherwise provider defaults.
+func (m *ProviderMeta) ResolveDigestAuth(override *DigestAuthModel) *DigestAuthConfig {
+	return resolveDigestAuth(m.DefaultDigestAuth(), override)
 }
 
 // DefaultHeaders returns provider-level headers applied to every outbound request.
@@ -227,26 +246,32 @@ func cloneTransportWithProxy(proxy func(*http.Request) (*url.URL, error)) http.R
 
 // NewHTTPClient returns an HTTP client for the given TLS configuration.
 // Pass nil tlsCfg for a non-TLS client. Both paths honor configured proxy settings.
-func (m *ProviderMeta) NewHTTPClient(tlsCfg *TlsConfig) (*http.Client, error) {
-	if tlsCfg != nil {
-		return createTlsClient(tlsCfg, m.transportProxy())
-	}
-
-	var transport http.RoundTripper
-	if _, ok := http.DefaultTransport.(*http.Transport); ok {
-		transport = cloneTransportWithProxy(m.transportProxy())
-	} else {
-		// Preserve test transports such as httpmock's MockTransport.
-		transport = http.DefaultTransport
+func (m *ProviderMeta) NewHTTPClient(tlsCfg *TlsConfig, digestAuth *DigestAuthConfig) (*http.Client, error) {
+	transport, err := m.buildTransport(tlsCfg)
+	if err != nil {
+		return nil, err
 	}
 
 	return &http.Client{
-		Transport: transport,
+		Transport: wrapTransportWithDigest(transport, digestAuth),
 		Timeout:   30 * time.Second,
 	}, nil
 }
 
-func createTlsClient(cfg *TlsConfig, proxy func(*http.Request) (*url.URL, error)) (*http.Client, error) {
+func (m *ProviderMeta) buildTransport(tlsCfg *TlsConfig) (http.RoundTripper, error) {
+	if tlsCfg != nil {
+		return buildTlsTransport(tlsCfg, m.transportProxy())
+	}
+
+	if _, ok := http.DefaultTransport.(*http.Transport); ok {
+		return cloneTransportWithProxy(m.transportProxy()), nil
+	}
+
+	// Preserve test transports such as httpmock's MockTransport.
+	return http.DefaultTransport, nil
+}
+
+func buildTlsTransport(cfg *TlsConfig, proxy func(*http.Request) (*url.URL, error)) (http.RoundTripper, error) {
 	var certificates []tls.Certificate
 	if cfg.CertFile != "" && cfg.KeyFile != "" {
 		cert, err := tls.LoadX509KeyPair(cfg.CertFile, cfg.KeyFile)
@@ -256,7 +281,6 @@ func createTlsClient(cfg *TlsConfig, proxy func(*http.Request) (*url.URL, error)
 		certificates = append(certificates, cert)
 	}
 
-	// Load CA certificates.
 	rootCAs, _ := x509.SystemCertPool()
 	if rootCAs == nil {
 		rootCAs = x509.NewCertPool()
@@ -272,7 +296,6 @@ func createTlsClient(cfg *TlsConfig, proxy func(*http.Request) (*url.URL, error)
 		}
 	}
 
-	// Build TLS configuration.
 	tlsConfig := &tls.Config{
 		Certificates:       certificates,
 		RootCAs:            rootCAs,
@@ -285,10 +308,7 @@ func createTlsClient(cfg *TlsConfig, proxy func(*http.Request) (*url.URL, error)
 	}
 	transport.TLSClientConfig = tlsConfig
 
-	return &http.Client{
-		Transport: transport,
-		Timeout:   30 * time.Second,
-	}, nil
+	return transport, nil
 }
 
 func convertMap(tfMap types.Map) map[string]string {

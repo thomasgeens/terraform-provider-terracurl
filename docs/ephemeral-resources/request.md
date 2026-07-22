@@ -30,6 +30,7 @@ TerraCurl request ephemeral resource
 - `close_ca_cert_directory` (String) Path to a directory on local disk that contains one or more certificate files that will be used to validate the certificate presented by the server
 - `close_ca_cert_file` (String) Path to a file on local disk that will be used to validate the certificate presented by the server
 - `close_cert_file` (String) Path to a file on local disk that contains the PEM-encoded certificate to present to the server
+- `close_digest_auth` (Attributes, Sensitive) HTTP Digest authentication credentials for the close request. Overrides provider `default_digest_auth` when configured. (see [below for nested schema](#nestedatt--close_digest_auth))
 - `close_headers` (Map of String) Map of headers to attach to the API call. Host (case-insensitive) overrides the HTTP Host header sent on the wire, independent of the URL hostname.
 - `close_key_file` (String) Path to a file on local disk that contains the PEM-encoded private key for which the authentication certificate was issued
 - `close_max_retry` (Number) Maximum number of tries until it is marked as failed
@@ -41,12 +42,14 @@ TerraCurl request ephemeral resource
 - `close_skip_tls_verify` (Boolean) Set this to true to disable verification of the server's TLS certificate
 - `close_timeout` (Number) Time in seconds before each request times out. Defaults to 10
 - `close_url` (String) Api endpoint to call
+- `digest_auth` (Attributes, Sensitive) HTTP Digest authentication credentials for the open request. Overrides provider `default_digest_auth` when configured. (see [below for nested schema](#nestedatt--digest_auth))
 - `headers` (Map of String) Map of headers to attach to the API call. Host (case-insensitive) overrides the HTTP Host header sent on the wire, independent of the URL hostname.
 - `key_file` (String) Path to a file on local disk that contains the PEM-encoded private key for which the authentication certificate was issued
 - `max_retry` (Number) Maximum number of tries until it is marked as failed
 - `renew_ca_cert_directory` (String) Path to a directory on local disk that contains one or more certificate files that will be used to validate the certificate presented by the server
 - `renew_ca_cert_file` (String) Path to a file on local disk that will be used to validate the certificate presented by the server
 - `renew_cert_file` (String) Path to a file on local disk that contains the PEM-encoded certificate to present to the server
+- `renew_digest_auth` (Attributes, Sensitive) HTTP Digest authentication credentials for the renew request. Overrides provider `default_digest_auth` when configured. (see [below for nested schema](#nestedatt--renew_digest_auth))
 - `renew_headers` (Map of String) Map of headers to attach to the API call. Host (case-insensitive) overrides the HTTP Host header sent on the wire, independent of the URL hostname.
 - `renew_interval` (Number) Interval in seconds to renew this resource.
 - `renew_key_file` (String) Path to a file on local disk that contains the PEM-encoded private key for which the authentication certificate was issued
@@ -81,3 +84,29 @@ TerraCurl request ephemeral resource
 - `sensitive_renew_response` (String, Sensitive) JSON response received from renew request, marked as sensitive so it is not displayed in plan output. Populated only when `response_sensitive` is `true`.
 - `sensitive_response` (String, Sensitive) JSON response received from request, marked as sensitive so it is not displayed in plan output. Populated only when `response_sensitive` is `true`.
 - `status_code` (String) Response status code received from request
+
+<a id="nestedatt--close_digest_auth"></a>
+### Nested Schema for `close_digest_auth`
+
+Required:
+
+- `password` (String, Sensitive) Password for HTTP Digest authentication.
+- `username` (String, Sensitive) Username for HTTP Digest authentication.
+
+
+<a id="nestedatt--digest_auth"></a>
+### Nested Schema for `digest_auth`
+
+Required:
+
+- `password` (String, Sensitive) Password for HTTP Digest authentication.
+- `username` (String, Sensitive) Username for HTTP Digest authentication.
+
+
+<a id="nestedatt--renew_digest_auth"></a>
+### Nested Schema for `renew_digest_auth`
+
+Required:
+
+- `password` (String, Sensitive) Password for HTTP Digest authentication.
+- `username` (String, Sensitive) Username for HTTP Digest authentication.
