@@ -47,60 +47,60 @@ type CurlResource struct {
 
 // CurlResourceModel describes the resource data model.
 type CurlResourceModel struct {
-	Id                       types.String `tfsdk:"id"`
-	Name                     types.String `tfsdk:"name"`
-	Url                      types.String `tfsdk:"url"`
-	Method                   types.String `tfsdk:"method"`
-	RequestBody              types.String `tfsdk:"request_body"`
+	Id                       types.String     `tfsdk:"id"`
+	Name                     types.String     `tfsdk:"name"`
+	Url                      types.String     `tfsdk:"url"`
+	Method                   types.String     `tfsdk:"method"`
+	RequestBody              types.String     `tfsdk:"request_body"`
 	Headers                  types.Map        `tfsdk:"headers"`
-	DigestAuth                 *DigestAuthModel `tfsdk:"digest_auth"`
+	DigestAuth               *DigestAuthModel `tfsdk:"digest_auth"`
 	RequestParameters        types.Map        `tfsdk:"request_parameters"`
-	RequestUrlString         types.String `tfsdk:"request_url_string"`
-	CertFile                 types.String `tfsdk:"cert_file"`
-	KeyFile                  types.String `tfsdk:"key_file"`
-	CaCertFile               types.String `tfsdk:"ca_cert_file"`
-	CaCertDirectory          types.String `tfsdk:"ca_cert_directory"`
-	SkipTlsVerify            types.Bool   `tfsdk:"skip_tls_verify"`
-	RetryInterval            types.Int64  `tfsdk:"retry_interval"`
-	MaxRetry                 types.Int64  `tfsdk:"max_retry"`
-	Timeout                  types.Int64  `tfsdk:"timeout"`
-	Response                 types.String `tfsdk:"response"`
-	SensitiveResponse        types.String `tfsdk:"sensitive_response"`
-	ResponseSensitive        types.Bool   `tfsdk:"response_sensitive"`
-	ResponseCodes            types.List   `tfsdk:"response_codes"`
-	StatusCode               types.String `tfsdk:"status_code"`
-	SkipDestroy              types.Bool   `tfsdk:"skip_destroy"`
-	DestroyUrl               types.String `tfsdk:"destroy_url"`
-	DestroyMethod            types.String `tfsdk:"destroy_method"`
-	DestroyRequestBody       types.String `tfsdk:"destroy_request_body"`
+	RequestUrlString         types.String     `tfsdk:"request_url_string"`
+	CertFile                 types.String     `tfsdk:"cert_file"`
+	KeyFile                  types.String     `tfsdk:"key_file"`
+	CaCertFile               types.String     `tfsdk:"ca_cert_file"`
+	CaCertDirectory          types.String     `tfsdk:"ca_cert_directory"`
+	SkipTlsVerify            types.Bool       `tfsdk:"skip_tls_verify"`
+	RetryInterval            types.Int64      `tfsdk:"retry_interval"`
+	MaxRetry                 types.Int64      `tfsdk:"max_retry"`
+	Timeout                  types.Int64      `tfsdk:"timeout"`
+	Response                 types.String     `tfsdk:"response"`
+	SensitiveResponse        types.String     `tfsdk:"sensitive_response"`
+	ResponseSensitive        types.Bool       `tfsdk:"response_sensitive"`
+	ResponseCodes            types.List       `tfsdk:"response_codes"`
+	StatusCode               types.String     `tfsdk:"status_code"`
+	SkipDestroy              types.Bool       `tfsdk:"skip_destroy"`
+	DestroyUrl               types.String     `tfsdk:"destroy_url"`
+	DestroyMethod            types.String     `tfsdk:"destroy_method"`
+	DestroyRequestBody       types.String     `tfsdk:"destroy_request_body"`
 	DestroyHeaders           types.Map        `tfsdk:"destroy_headers"`
 	DestroyDigestAuth        *DigestAuthModel `tfsdk:"destroy_digest_auth"`
 	DestroyRequestParameters types.Map        `tfsdk:"destroy_request_parameters"`
-	DestroyRequestUrlString  types.String `tfsdk:"destroy_request_url_string"`
-	DestroyCertFile          types.String `tfsdk:"destroy_cert_file"`
-	DestroyKeyFile           types.String `tfsdk:"destroy_key_file"`
-	DestroyCaCertFile        types.String `tfsdk:"destroy_ca_cert_file"`
-	DestroyCaCertDirectory   types.String `tfsdk:"destroy_ca_cert_directory"`
-	DestroySkipTlsVerify     types.Bool   `tfsdk:"destroy_skip_tls_verify"`
-	DestroyRetryInterval     types.Int64  `tfsdk:"destroy_retry_interval"`
-	DestroyMaxRetry          types.Int64  `tfsdk:"destroy_max_retry"`
-	DestroyTimeout           types.Int64  `tfsdk:"destroy_timeout"`
-	DestroyResponseCodes     types.List   `tfsdk:"destroy_response_codes"`
-	SkipRead                 types.Bool   `tfsdk:"skip_read"`
-	ReadUrl                  types.String `tfsdk:"read_url"`
-	ReadMethod               types.String `tfsdk:"read_method"`
+	DestroyRequestUrlString  types.String     `tfsdk:"destroy_request_url_string"`
+	DestroyCertFile          types.String     `tfsdk:"destroy_cert_file"`
+	DestroyKeyFile           types.String     `tfsdk:"destroy_key_file"`
+	DestroyCaCertFile        types.String     `tfsdk:"destroy_ca_cert_file"`
+	DestroyCaCertDirectory   types.String     `tfsdk:"destroy_ca_cert_directory"`
+	DestroySkipTlsVerify     types.Bool       `tfsdk:"destroy_skip_tls_verify"`
+	DestroyRetryInterval     types.Int64      `tfsdk:"destroy_retry_interval"`
+	DestroyMaxRetry          types.Int64      `tfsdk:"destroy_max_retry"`
+	DestroyTimeout           types.Int64      `tfsdk:"destroy_timeout"`
+	DestroyResponseCodes     types.List       `tfsdk:"destroy_response_codes"`
+	SkipRead                 types.Bool       `tfsdk:"skip_read"`
+	ReadUrl                  types.String     `tfsdk:"read_url"`
+	ReadMethod               types.String     `tfsdk:"read_method"`
 	ReadHeaders              types.Map        `tfsdk:"read_headers"`
 	ReadDigestAuth           *DigestAuthModel `tfsdk:"read_digest_auth"`
 	ReadParameters           types.Map        `tfsdk:"read_parameters"`
-	ReadRequestBody          types.String `tfsdk:"read_request_body"`
-	ReadCertFile             types.String `tfsdk:"read_cert_file"`
-	ReadKeyFile              types.String `tfsdk:"read_key_file"`
-	ReadCaCertFile           types.String `tfsdk:"read_ca_cert_file"`
-	ReadCaCertDirectory      types.String `tfsdk:"read_ca_cert_directory"`
-	ReadSkipTlsVerify        types.Bool   `tfsdk:"read_skip_tls_verify"`
-	ReadResponseCodes        types.List   `tfsdk:"read_response_codes"`
-	DriftMarker              types.String `tfsdk:"drift_marker"`
-	IgnoreResponseFields     types.List   `tfsdk:"ignore_response_fields"`
+	ReadRequestBody          types.String     `tfsdk:"read_request_body"`
+	ReadCertFile             types.String     `tfsdk:"read_cert_file"`
+	ReadKeyFile              types.String     `tfsdk:"read_key_file"`
+	ReadCaCertFile           types.String     `tfsdk:"read_ca_cert_file"`
+	ReadCaCertDirectory      types.String     `tfsdk:"read_ca_cert_directory"`
+	ReadSkipTlsVerify        types.Bool       `tfsdk:"read_skip_tls_verify"`
+	ReadResponseCodes        types.List       `tfsdk:"read_response_codes"`
+	DriftMarker              types.String     `tfsdk:"drift_marker"`
+	IgnoreResponseFields     types.List       `tfsdk:"ignore_response_fields"`
 }
 
 func (r *CurlResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

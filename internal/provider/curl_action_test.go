@@ -140,9 +140,9 @@ func providerWithActions(ctx context.Context, t *testing.T) tfprotov6.ProviderSe
 func buildRequestActionConfig(url string, responseCodes []string, headers map[string]string) (tftypes.Type, map[string]tftypes.Value) {
 	configType := tftypes.Object{
 		AttributeTypes: map[string]tftypes.Type{
-			"ca_cert_directory":  tftypes.String,
-			"ca_cert_file":       tftypes.String,
-			"cert_file":          tftypes.String,
+			"ca_cert_directory": tftypes.String,
+			"ca_cert_file":      tftypes.String,
+			"cert_file":         tftypes.String,
 			"digest_auth": tftypes.Object{
 				AttributeTypes: map[string]tftypes.Type{
 					"username": tftypes.String,
