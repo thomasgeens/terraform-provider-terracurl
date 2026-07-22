@@ -34,4 +34,12 @@ See the [HTTP Proxy Support guide](guides/proxy) for configuration examples, pre
 
 {{ tffile "examples/provider/proxy_example.tf" }}
 
+## Default Headers for Auth Tokens
+
+TerraCurl supports provider-level `default_headers` for short-lived authentication tokens that must be refreshed on every Terraform run, including destroy.
+
+See the [Default Headers for Auth Tokens guide](guides/default_headers) for configuration examples, merge behavior, and migration from resource-level auth headers.
+
+{{ tffile "examples/provider/default_headers_example.tf" }}
+
 ## Limitations

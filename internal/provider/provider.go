@@ -30,9 +30,10 @@ type TerraCurlProvider struct {
 
 // TerraCurlProviderModel describes the provider data model.
 type TerraCurlProviderModel struct {
-	HttpProxy  types.String `tfsdk:"http_proxy"`
-	HttpsProxy types.String `tfsdk:"https_proxy"`
-	NoProxy    types.String `tfsdk:"no_proxy"`
+	HttpProxy      types.String `tfsdk:"http_proxy"`
+	HttpsProxy     types.String `tfsdk:"https_proxy"`
+	NoProxy        types.String `tfsdk:"no_proxy"`
+	DefaultHeaders types.Map    `tfsdk:"default_headers"`
 }
 
 func (p *TerraCurlProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
@@ -56,6 +57,12 @@ func (p *TerraCurlProvider) Schema(ctx context.Context, req provider.SchemaReque
 				MarkdownDescription: "Comma-separated list of hosts that should bypass the proxy. Overrides the `NO_PROXY` environment variable when set.",
 				Optional:            true,
 			},
+			"default_headers": schema.MapAttribute{
+				MarkdownDescription: "Headers applied to every outbound HTTP request. Values are re-evaluated on each Terraform run and override resource-level headers with the same key. Use for short-lived auth tokens (e.g. OAuth, GCP ID tokens) that must stay fresh during destroy.",
+				ElementType:         types.StringType,
+				Optional:            true,
+				Sensitive:           true,
+			},
 		},
 	}
 }
@@ -69,7 +76,7 @@ func (p *TerraCurlProvider) Configure(ctx context.Context, req provider.Configur
 		return
 	}
 
-	meta := NewProviderMeta(data.HttpProxy, data.HttpsProxy, data.NoProxy)
+	meta := NewProviderMeta(data.HttpProxy, data.HttpsProxy, data.NoProxy, data.DefaultHeaders)
 	resp.DataSourceData = meta
 	resp.ResourceData = meta
 	resp.EphemeralResourceData = meta

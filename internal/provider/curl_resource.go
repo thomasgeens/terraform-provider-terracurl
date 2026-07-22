@@ -515,7 +515,7 @@ func (r *CurlResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	// Add headers
-	applyRequestHeaders(request, data.Headers)
+	applyRequestHeadersWithDefaults(request, data.Headers, r.providerMeta())
 
 	// Add query parameters
 	if !data.RequestParameters.IsNull() && !data.RequestParameters.IsUnknown() {
@@ -646,7 +646,7 @@ func (r *CurlResource) executeReadRequest(ctx context.Context, data CurlResource
 		return
 	}
 
-	applyRequestHeaders(request, data.ReadHeaders)
+	applyRequestHeadersWithDefaults(request, data.ReadHeaders, r.providerMeta())
 
 	if !data.ReadParameters.IsNull() && !data.ReadParameters.IsUnknown() {
 		params := request.URL.Query()
@@ -873,7 +873,7 @@ func (r *CurlResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 
 	// Add Headers
-	applyRequestHeaders(request, data.DestroyHeaders)
+	applyRequestHeadersWithDefaults(request, data.DestroyHeaders, r.providerMeta())
 
 	// Add Query Parameters
 	if !data.DestroyRequestParameters.IsNull() && !data.DestroyRequestParameters.IsUnknown() {

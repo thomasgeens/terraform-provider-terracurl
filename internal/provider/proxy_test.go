@@ -16,7 +16,7 @@ func TestNewProviderMetaProxyResolution(t *testing.T) {
 	t.Setenv("NO_PROXY", "")
 
 	t.Run("uses environment when provider values unset", func(t *testing.T) {
-		meta := NewProviderMeta(types.StringNull(), types.StringNull(), types.StringNull())
+		meta := NewProviderMeta(types.StringNull(), types.StringNull(), types.StringNull(), types.MapNull(types.StringType))
 		proxyURL, err := meta.requestProxy(&http.Request{URL: mustParseURL(t, "http://example.com/path")})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -31,6 +31,7 @@ func TestNewProviderMetaProxyResolution(t *testing.T) {
 			types.StringValue("http://provider-proxy.example:3128"),
 			types.StringNull(),
 			types.StringNull(),
+			types.MapNull(types.StringType),
 		)
 		proxyURL, err := meta.requestProxy(&http.Request{URL: mustParseURL(t, "http://example.com/path")})
 		if err != nil {
@@ -42,7 +43,7 @@ func TestNewProviderMetaProxyResolution(t *testing.T) {
 	})
 
 	t.Run("explicit empty provider value disables proxy", func(t *testing.T) {
-		meta := NewProviderMeta(types.StringValue(""), types.StringNull(), types.StringNull())
+		meta := NewProviderMeta(types.StringValue(""), types.StringNull(), types.StringNull(), types.MapNull(types.StringType))
 		proxyURL, err := meta.requestProxy(&http.Request{URL: mustParseURL(t, "http://example.com/path")})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -53,7 +54,7 @@ func TestNewProviderMetaProxyResolution(t *testing.T) {
 	})
 
 	t.Run("uses HTTPS proxy for HTTPS requests", func(t *testing.T) {
-		meta := NewProviderMeta(types.StringNull(), types.StringNull(), types.StringNull())
+		meta := NewProviderMeta(types.StringNull(), types.StringNull(), types.StringNull(), types.MapNull(types.StringType))
 		proxyURL, err := meta.requestProxy(&http.Request{URL: mustParseURL(t, "https://example.com/path")})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -64,7 +65,7 @@ func TestNewProviderMetaProxyResolution(t *testing.T) {
 	})
 
 	t.Run("respects NO_PROXY", func(t *testing.T) {
-		meta := NewProviderMeta(types.StringNull(), types.StringNull(), types.StringValue("localhost,127.0.0.1"))
+		meta := NewProviderMeta(types.StringNull(), types.StringNull(), types.StringValue("localhost,127.0.0.1"), types.MapNull(types.StringType))
 		proxyURL, err := meta.requestProxy(&http.Request{URL: mustParseURL(t, "http://127.0.0.1/path")})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -80,6 +81,7 @@ func TestProviderMetaNewHTTPClientTransportProxy(t *testing.T) {
 		types.StringValue("http://proxy.example:8080"),
 		types.StringNull(),
 		types.StringNull(),
+		types.MapNull(types.StringType),
 	)
 
 	t.Run("non-TLS client configures proxy", func(t *testing.T) {
@@ -126,6 +128,7 @@ func TestHTTPClientRoutesHTTPThroughProxy(t *testing.T) {
 		types.StringValue(proxyServer.URL),
 		types.StringNull(),
 		types.StringValue(""),
+		types.MapNull(types.StringType),
 	)
 	client, err := meta.NewHTTPClient(nil)
 	if err != nil {
@@ -171,6 +174,7 @@ func TestHTTPClientRoutesHTTPSThroughProxy(t *testing.T) {
 		types.StringNull(),
 		types.StringValue(proxyServer.URL),
 		types.StringValue(""),
+		types.MapNull(types.StringType),
 	)
 	client, err := meta.NewHTTPClient(&TlsConfig{SkipTlsVerify: true})
 	if err != nil {

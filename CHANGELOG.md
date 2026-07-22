@@ -1,3 +1,9 @@
+## 2.6.0
+
+ENHANCEMENTS:
+
+- Add provider `default_headers` for auth tokens that must be refreshed on each Terraform run, including destroy. Closes #83.
+
 ## 2.5.4
 
 BUG FIXES:

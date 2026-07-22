@@ -453,7 +453,7 @@ func (e *EphemeralCurlResource) Open(ctx context.Context, req ephemeral.OpenRequ
 	}
 
 	// Add headers.
-	applyRequestHeaders(request, data.Headers)
+	applyRequestHeadersWithDefaults(request, data.Headers, e.providerMeta())
 
 	// Add query parameters.
 	if !data.RequestParameters.IsNull() && !data.RequestParameters.IsUnknown() {
@@ -1100,7 +1100,7 @@ func (e *EphemeralCurlResource) Renew(ctx context.Context, req ephemeral.RenewRe
 	}
 
 	// Add headers
-	applyRequestHeaders(request, privateData.RenewHeaders)
+	applyRequestHeadersWithDefaults(request, privateData.RenewHeaders, e.providerMeta())
 
 	tflog.Debug(ctx, fmt.Sprintf("Parameters: %v\n", privateData.RenewRequestParameters.Elements()))
 
@@ -1454,7 +1454,7 @@ func (e *EphemeralCurlResource) Close(ctx context.Context, req ephemeral.CloseRe
 	if privateData.CloseHeaders.IsNull() || privateData.CloseHeaders.IsUnknown() {
 		tflog.Debug(ctx, "No CloseHeaders provided, proceeding without headers")
 	} else {
-		applyRequestHeaders(request, privateData.CloseHeaders)
+		applyRequestHeadersWithDefaults(request, privateData.CloseHeaders, e.providerMeta())
 	}
 
 	// Add Query Parameters

@@ -92,20 +92,23 @@ func providerWithActions(ctx context.Context, t *testing.T) tfprotov6.ProviderSe
 
 	providerConfigType := tftypes.Object{
 		AttributeTypes: map[string]tftypes.Type{
-			"http_proxy":  tftypes.String,
-			"https_proxy": tftypes.String,
-			"no_proxy":    tftypes.String,
+			"http_proxy":      tftypes.String,
+			"https_proxy":     tftypes.String,
+			"no_proxy":        tftypes.String,
+			"default_headers": tftypes.Map{ElementType: tftypes.String},
 		},
 		OptionalAttributes: map[string]struct{}{
-			"http_proxy":  {},
-			"https_proxy": {},
-			"no_proxy":    {},
+			"http_proxy":      {},
+			"https_proxy":     {},
+			"no_proxy":        {},
+			"default_headers": {},
 		},
 	}
 	providerConfigValue := tftypes.NewValue(providerConfigType, map[string]tftypes.Value{
-		"http_proxy":  tftypes.NewValue(tftypes.String, nil),
-		"https_proxy": tftypes.NewValue(tftypes.String, nil),
-		"no_proxy":    tftypes.NewValue(tftypes.String, nil),
+		"http_proxy":      tftypes.NewValue(tftypes.String, nil),
+		"https_proxy":     tftypes.NewValue(tftypes.String, nil),
+		"no_proxy":        tftypes.NewValue(tftypes.String, nil),
+		"default_headers": tftypes.NewValue(tftypes.Map{ElementType: tftypes.String}, nil),
 	})
 	configValue, err := tfprotov6.NewDynamicValue(providerConfigType, providerConfigValue)
 	if err != nil {
