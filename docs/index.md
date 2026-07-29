@@ -5,7 +5,7 @@ description: |-
 
   With TerraCurl, you can define create, read, update, and delete operations as HTTP requests, complete with support for custom headers, authentication, TLS configuration, retries, and response parsing. This makes it possible to manage third-party APIs, internal services, and bespoke platforms as first-class Terraform resources, without resorting to brittle null_resource hacks or external scripts.
 
-  TerraCurl is designed for reliability and correctness, supporting state reconciliation, drift detection, idempotency, and lifecycle control. It can trigger resource recreation when remote state diverges from expected responses, handle ephemeral resources, and work with multipart and form-based APIs. By bringing arbitrary HTTP endpoints under Terraform’s declarative model, TerraCurl bridges the gap between “infrastructure as code” and “API as code”, enabling consistent automation, auditability, and repeatability across the entire platform stack.
+  TerraCurl is designed for reliability and correctness, supporting state reconciliation, drift detection, idempotency, and lifecycle control. It can trigger resource recreation when remote state diverges from expected responses, handle ephemeral resources, and load file-based or multipart form request bodies. By bringing arbitrary HTTP endpoints under Terraform’s declarative model, TerraCurl bridges the gap between “infrastructure as code” and “API as code”, enabling consistent automation, auditability, and repeatability across the entire platform stack.
 ---
 
 # TERRACURL Provider
@@ -14,7 +14,7 @@ TerraCurl is an open-source Terraform provider that enables declarative, configu
 
 With TerraCurl, you can define create, read, update, and delete operations as HTTP requests, complete with support for custom headers, authentication, TLS configuration, retries, and response parsing. This makes it possible to manage third-party APIs, internal services, and bespoke platforms as first-class Terraform resources, without resorting to brittle null_resource hacks or external scripts.
 
-TerraCurl is designed for reliability and correctness, supporting state reconciliation, drift detection, idempotency, and lifecycle control. It can trigger resource recreation when remote state diverges from expected responses, handle ephemeral resources, and work with multipart and form-based APIs. By bringing arbitrary HTTP endpoints under Terraform’s declarative model, TerraCurl bridges the gap between “infrastructure as code” and “API as code”, enabling consistent automation, auditability, and repeatability across the entire platform stack.
+TerraCurl is designed for reliability and correctness, supporting state reconciliation, drift detection, idempotency, and lifecycle control. It can trigger resource recreation when remote state diverges from expected responses, handle ephemeral resources, and load file-based or multipart form request bodies. By bringing arbitrary HTTP endpoints under Terraform’s declarative model, TerraCurl bridges the gap between “infrastructure as code” and “API as code”, enabling consistent automation, auditability, and repeatability across the entire platform stack.
 
 Use the navigation to the left to read about the available resources.
 
@@ -252,6 +252,47 @@ resource "terracurl_request" "body_destroy" {
   destroy_method         = "POST"
   destroy_request_body   = jsonencode({ user_id = "{response.data.user.uuid}" })
   destroy_response_codes = [200]
+}
+```
+
+## File and Multipart Request Bodies
+
+TerraCurl supports loading raw request bodies from disk with `request_body_file` and building `multipart/form-data` payloads with `request_multipart` on resources, data sources, actions, and ephemeral resources.
+
+See the [File and Multipart Request Bodies guide](guides/file_and_multipart_bodies) for per-surface examples, mutual exclusion rules, and Content-Type behavior.
+
+```terraform
+resource "terracurl_request" "kudu_deploy" {
+  name   = "kudu-deploy"
+  url    = "https://myapp.scm.azurewebsites.net/api/zipdeploy?isAsync=true"
+  method = "PUT"
+
+  request_body_file = "${path.module}/app.zip"
+
+  headers = {
+    Content-Type = "application/zip"
+  }
+
+  response_codes = [200, 202]
+  skip_read      = true
+  skip_destroy   = true
+}
+
+resource "terracurl_request" "multipart_upload" {
+  name   = "multipart-upload"
+  url    = "https://api.example.com/upload"
+  method = "POST"
+
+  request_multipart = {
+    parts = [
+      { name = "name", value = "John" },
+      { name = "photo", file_path = "${path.module}/john.jpg", content_type = "image/jpeg" },
+    ]
+  }
+
+  response_codes = [200]
+  skip_read      = true
+  skip_destroy   = true
 }
 ```
 

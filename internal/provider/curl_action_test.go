@@ -1,14 +1,20 @@
 package provider
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
@@ -138,6 +144,20 @@ func providerWithActions(ctx context.Context, t *testing.T) tfprotov6.ProviderSe
 }
 
 func buildRequestActionConfig(url string, responseCodes []string, headers map[string]string) (tftypes.Type, map[string]tftypes.Value) {
+	multipartPartType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"name":         tftypes.String,
+			"value":        tftypes.String,
+			"file_path":    tftypes.String,
+			"content_type": tftypes.String,
+		},
+	}
+	requestMultipartType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"parts": tftypes.List{ElementType: multipartPartType},
+		},
+	}
+
 	configType := tftypes.Object{
 		AttributeTypes: map[string]tftypes.Type{
 			"ca_cert_directory": tftypes.String,
@@ -154,6 +174,8 @@ func buildRequestActionConfig(url string, responseCodes []string, headers map[st
 			"max_retry":          tftypes.Number,
 			"method":             tftypes.String,
 			"request_body":       tftypes.String,
+			"request_body_file":  tftypes.String,
+			"request_multipart":  requestMultipartType,
 			"request_parameters": tftypes.Map{ElementType: tftypes.String},
 			"response_codes":     tftypes.List{ElementType: tftypes.String},
 			"retry_interval":     tftypes.Number,
@@ -170,6 +192,8 @@ func buildRequestActionConfig(url string, responseCodes []string, headers map[st
 			"key_file":           {},
 			"max_retry":          {},
 			"request_body":       {},
+			"request_body_file":  {},
+			"request_multipart":  {},
 			"request_parameters": {},
 			"retry_interval":     {},
 			"skip_tls_verify":    {},
@@ -200,6 +224,8 @@ func buildRequestActionConfig(url string, responseCodes []string, headers map[st
 		"max_retry":          tftypes.NewValue(tftypes.Number, nil),
 		"method":             tftypes.NewValue(tftypes.String, "GET"),
 		"request_body":       tftypes.NewValue(tftypes.String, nil),
+		"request_body_file":  tftypes.NewValue(tftypes.String, nil),
+		"request_multipart":  tftypes.NewValue(requestMultipartType, nil),
 		"request_parameters": tftypes.NewValue(tftypes.Map{ElementType: tftypes.String}, map[string]tftypes.Value{}),
 		"response_codes":     tftypes.NewValue(tftypes.List{ElementType: tftypes.String}, responseCodesList),
 		"retry_interval":     tftypes.NewValue(tftypes.Number, nil),
@@ -248,4 +274,69 @@ func invokeRequestAction(ctx context.Context, t *testing.T, url string, response
 	}
 
 	return fmt.Errorf("invoke finished without completion event")
+}
+
+func TestInvokeCurlActionMultipart(t *testing.T) {
+	t.Setenv("USE_DEFAULT_CLIENT_FOR_TESTS", "true")
+
+	attachmentFile := filepath.Join(t.TempDir(), "upload.txt")
+	if err := os.WriteFile(attachmentFile, []byte("action-file"), 0o600); err != nil {
+		t.Fatalf("write attachment file: %v", err)
+	}
+
+	var gotContentType string
+	var gotBody atomic.Value
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotContentType = r.Header.Get("Content-Type")
+		bodyBytes, _ := io.ReadAll(r.Body)
+		gotBody.Store(string(bodyBytes))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	model := CurlActionModel{
+		URL:    types.StringValue(server.URL),
+		Method: types.StringValue("POST"),
+		RequestMultipart: multipartConfigFromParts(t, []map[string]string{
+			{"name": "title", "value": "demo"},
+			{"name": "file", "file_path": attachmentFile},
+		}),
+		ResponseCodes: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("200")}),
+	}
+
+	payload, diags := resolveRequestPayload(model.RequestBody, types.StringNull(), model.RequestBodyFile, model.RequestMultipart)
+	if diags.HasError() {
+		t.Fatalf("resolve payload: %v", diags)
+	}
+
+	var bodyReader io.Reader
+	if len(payload.Body) > 0 {
+		bodyReader = bytes.NewReader(payload.Body)
+	}
+	request, err := http.NewRequest(model.Method.ValueString(), model.URL.ValueString(), bodyReader)
+	if err != nil {
+		t.Fatalf("new request: %v", err)
+	}
+	applyResolvedPayloadToRequest(request, payload)
+
+	client, err := DefaultProviderMeta().NewHTTPClient(nil, nil)
+	if err != nil {
+		t.Fatalf("new client: %v", err)
+	}
+	response, err := client.Do(request)
+	if err != nil {
+		t.Fatalf("do request: %v", err)
+	}
+	defer func() { _ = response.Body.Close() }()
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("status code got %d", response.StatusCode)
+	}
+
+	body := gotBody.Load().(string)
+	if !strings.HasPrefix(gotContentType, "multipart/form-data; boundary=") {
+		t.Fatalf("content type got %q", gotContentType)
+	}
+	if !strings.Contains(body, "demo") || !strings.Contains(body, "action-file") {
+		t.Fatalf("body got %q", body)
+	}
 }

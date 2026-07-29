@@ -31,6 +31,8 @@ TerraCurl request action
 - `key_file` (String) Path to a file on local disk that contains the PEM-encoded private key for which the authentication certificate was issued
 - `max_retry` (Number) Maximum number of tries until it is marked as failed
 - `request_body` (String) A request body to attach to the API call
+- `request_body_file` (String) Path to a file on local disk to use as the request body. File bytes are read at request time and are not stored in Terraform state.
+- `request_multipart` (Attributes) Multipart form request body. The provider sets `Content-Type` with a generated boundary. (see [below for nested schema](#nestedatt--request_multipart))
 - `request_parameters` (Map of String) Map of parameters to attach to the API call
 - `retry_interval` (Number) Time in seconds between each retry attempt
 - `skip_tls_verify` (Boolean) Set this to true to disable verification of the server's TLS certificate
@@ -43,3 +45,24 @@ Required:
 
 - `password` (String) Password for HTTP Digest authentication.
 - `username` (String) Username for HTTP Digest authentication.
+
+
+<a id="nestedatt--request_multipart"></a>
+### Nested Schema for `request_multipart`
+
+Required:
+
+- `parts` (Attributes List) Multipart form parts. (see [below for nested schema](#nestedatt--request_multipart--parts))
+
+<a id="nestedatt--request_multipart--parts"></a>
+### Nested Schema for `request_multipart.parts`
+
+Required:
+
+- `name` (String) Form field name.
+
+Optional:
+
+- `content_type` (String) Optional Content-Type for this part. Defaults to `text/plain` for value parts and `application/octet-stream` for file parts.
+- `file_path` (String) Path to a file on local disk for this form field.
+- `value` (String) Text form field value.

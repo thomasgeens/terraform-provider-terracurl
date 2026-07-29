@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -146,8 +147,8 @@ func TestResolveDestroyTemplates_NoPlaceholders(t *testing.T) {
 	if resolved.URL != "https://example.com/destroy" {
 		t.Fatalf("url got %q", resolved.URL)
 	}
-	if string(resolved.Body) != `{"static":true}` {
-		t.Fatalf("body got %q", string(resolved.Body))
+	if string(resolved.Payload.Body) != `{"static":true}` {
+		t.Fatalf("body got %q", string(resolved.Payload.Body))
 	}
 }
 
@@ -165,8 +166,8 @@ func TestResolveDestroyTemplates_WithNestedPlaceholder(t *testing.T) {
 	if resolved.URL != "https://example.com/objects/nested-456" {
 		t.Fatalf("url got %q", resolved.URL)
 	}
-	if string(resolved.Body) != `{"id":"nested-456"}` {
-		t.Fatalf("body got %q", string(resolved.Body))
+	if string(resolved.Payload.Body) != `{"id":"nested-456"}` {
+		t.Fatalf("body got %q", string(resolved.Payload.Body))
 	}
 }
 
@@ -178,5 +179,24 @@ func TestValidateDestroyTemplates_SkipDestroy(t *testing.T) {
 	diags := validateDestroyTemplates(data)
 	if diags.HasError() {
 		t.Fatalf("unexpected diags: %v", diags)
+	}
+}
+
+func TestResolveDestroyTemplates_MultipartValuePlaceholder(t *testing.T) {
+	data := &CurlResourceModel{
+		Response:    types.StringValue(`{"id":"abc-123"}`),
+		DestroyUrl:  types.StringValue("https://example.com/destroy"),
+		DestroyMethod: types.StringValue("POST"),
+		DestroyRequestMultipart: multipartConfigFromParts(t, []map[string]string{
+			{"name": "id", "value": "{response.id}"},
+		}),
+	}
+
+	resolved, diags := resolveDestroyTemplates(data)
+	if diags.HasError() {
+		t.Fatalf("unexpected diags: %v", diags)
+	}
+	if !strings.Contains(string(resolved.Payload.Body), "abc-123") {
+		t.Fatalf("multipart body got %q", resolved.Payload.Body)
 	}
 }

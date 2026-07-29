@@ -41,8 +41,10 @@ When `skip_read` is `false` and `read_url`, `read_method`, and `read_response_co
 - `destroy_max_retry` (Number) Maximum number of tries until it is marked as failed for the destroy call
 - `destroy_method` (String) Destroy HTTP method to use in the API call
 - `destroy_request_body` (String) A request body to attach to the destroy API call. Supports `{response.<path>}` placeholders resolved from the stored create response at destroy time.
+- `destroy_request_body_file` (String) Path to a file on local disk to use as the request body. File bytes are read at request time and are not stored in Terraform state. Used for the destroy call.
 - `destroy_request_body_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only request body for the destroy call. Not stored in Terraform state.
 - `destroy_request_body_wo_version` (Number) Increment to trigger applying an updated `destroy_request_body_wo` value.
+- `destroy_request_multipart` (Attributes) Multipart form request body. The provider sets `Content-Type` with a generated boundary. Used for the destroy call. (see [below for nested schema](#nestedatt--destroy_request_multipart))
 - `destroy_request_parameters` (Map of String) Map of parameters to attach to the destroy API call. Values support `{response.<path>}` placeholders resolved from the stored create response at destroy time.
 - `destroy_response_codes` (List of String) A list of expected response codes for the destroy call
 - `destroy_retry_interval` (Number) Interval between each attempt for the destroy call
@@ -67,14 +69,18 @@ When `skip_read` is `false` and `read_url`, `read_method`, and `read_response_co
 - `read_method` (String) HTTP method for reading resource state. Required if `skip_read` is false.
 - `read_parameters` (Map of String) Optional request parameters to add to the URL
 - `read_request_body` (String) Optional request body to use for the read request.
+- `read_request_body_file` (String) Path to a file on local disk to use as the request body. File bytes are read at request time and are not stored in Terraform state. Used for the read call.
 - `read_request_body_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only request body for the read call. Snapshotted in provider private state for drift detection.
 - `read_request_body_wo_version` (Number) Increment to trigger refreshing snapshotted `read_request_body_wo` values.
+- `read_request_multipart` (Attributes) Multipart form request body. The provider sets `Content-Type` with a generated boundary. Used for the read call. (see [below for nested schema](#nestedatt--read_request_multipart))
 - `read_response_codes` (List of String) Expected response codes for the read request. Required if `skip_read` is false.
 - `read_skip_tls_verify` (Boolean) Skip TLS verification for the read request.
 - `read_url` (String) API endpoint for reading resource state. Required if `skip_read` is false.
 - `request_body` (String) A request body to attach to the API call
+- `request_body_file` (String) Path to a file on local disk to use as the request body. File bytes are read at request time and are not stored in Terraform state. Used for the create call.
 - `request_body_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only request body for the create call. Not stored in Terraform state. Requires Terraform 1.11 or later.
 - `request_body_wo_version` (Number) Increment to trigger applying an updated `request_body_wo` value.
+- `request_multipart` (Attributes) Multipart form request body. The provider sets `Content-Type` with a generated boundary. Used for the create call. (see [below for nested schema](#nestedatt--request_multipart))
 - `request_parameters` (Map of String) Map of parameters to attach to the API call
 - `response_sensitive` (Boolean) Set to `true` to treat the response as sensitive. When enabled, the response body is written to `sensitive_response` (a sensitive attribute) and `response` is left empty so that secret values are not displayed in plan output. Defaults to `false` to preserve existing behavior.
 - `retry_interval` (Number) Interval between each attempt
@@ -102,6 +108,28 @@ Required:
 - `username` (String, Sensitive) Username for HTTP Digest authentication.
 
 
+<a id="nestedatt--destroy_request_multipart"></a>
+### Nested Schema for `destroy_request_multipart`
+
+Required:
+
+- `parts` (Attributes List) Multipart form parts. (see [below for nested schema](#nestedatt--destroy_request_multipart--parts))
+
+<a id="nestedatt--destroy_request_multipart--parts"></a>
+### Nested Schema for `destroy_request_multipart.parts`
+
+Required:
+
+- `name` (String) Form field name.
+
+Optional:
+
+- `content_type` (String) Optional Content-Type for this part. Defaults to `text/plain` for value parts and `application/octet-stream` for file parts.
+- `file_path` (String) Path to a file on local disk for this form field.
+- `value` (String) Text form field value.
+
+
+
 <a id="nestedatt--digest_auth"></a>
 ### Nested Schema for `digest_auth`
 
@@ -118,6 +146,50 @@ Required:
 
 - `password` (String, Sensitive) Password for HTTP Digest authentication.
 - `username` (String, Sensitive) Username for HTTP Digest authentication.
+
+
+<a id="nestedatt--read_request_multipart"></a>
+### Nested Schema for `read_request_multipart`
+
+Required:
+
+- `parts` (Attributes List) Multipart form parts. (see [below for nested schema](#nestedatt--read_request_multipart--parts))
+
+<a id="nestedatt--read_request_multipart--parts"></a>
+### Nested Schema for `read_request_multipart.parts`
+
+Required:
+
+- `name` (String) Form field name.
+
+Optional:
+
+- `content_type` (String) Optional Content-Type for this part. Defaults to `text/plain` for value parts and `application/octet-stream` for file parts.
+- `file_path` (String) Path to a file on local disk for this form field.
+- `value` (String) Text form field value.
+
+
+
+<a id="nestedatt--request_multipart"></a>
+### Nested Schema for `request_multipart`
+
+Required:
+
+- `parts` (Attributes List) Multipart form parts. (see [below for nested schema](#nestedatt--request_multipart--parts))
+
+<a id="nestedatt--request_multipart--parts"></a>
+### Nested Schema for `request_multipart.parts`
+
+Required:
+
+- `name` (String) Form field name.
+
+Optional:
+
+- `content_type` (String) Optional Content-Type for this part. Defaults to `text/plain` for value parts and `application/octet-stream` for file parts.
+- `file_path` (String) Path to a file on local disk for this form field.
+- `value` (String) Text form field value.
+
 
 
 

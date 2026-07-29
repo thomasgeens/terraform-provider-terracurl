@@ -34,7 +34,9 @@ type CurlDataSourceModel struct {
 	Name              types.String     `tfsdk:"name"`
 	Url               types.String     `tfsdk:"url"`
 	Method            types.String     `tfsdk:"method"`
-	RequestBody       types.String     `tfsdk:"request_body"`
+	RequestBody       types.String          `tfsdk:"request_body"`
+	RequestBodyFile   types.String          `tfsdk:"request_body_file"`
+	RequestMultipart  *MultipartConfigModel `tfsdk:"request_multipart"`
 	Headers           types.Map        `tfsdk:"headers"`
 	DigestAuth        *DigestAuthModel `tfsdk:"digest_auth"`
 	RequestParameters types.Map        `tfsdk:"request_parameters"`
@@ -82,6 +84,11 @@ func (d *CurlDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 				Optional:            true,
 				MarkdownDescription: "A request body to attach to the API call",
 			},
+			"request_body_file": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: requestBodyFileDescription,
+			},
+			"request_multipart": dataSourceMultipartSchema(requestMultipartDescription),
 			"headers": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
@@ -208,8 +215,17 @@ func (d *CurlDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	reqBody := []byte(data.RequestBody.ValueString())
-	request, err := http.NewRequest(data.Method.ValueString(), data.Url.ValueString(), bytes.NewBuffer(reqBody))
+	payload, payloadDiags := resolveRequestPayload(data.RequestBody, types.StringNull(), data.RequestBodyFile, data.RequestMultipart)
+	resp.Diagnostics.Append(payloadDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var reqBodyReader io.Reader
+	if len(payload.Body) > 0 {
+		reqBodyReader = bytes.NewBuffer(payload.Body)
+	}
+	request, err := http.NewRequest(data.Method.ValueString(), data.Url.ValueString(), reqBodyReader)
 	if err != nil {
 		resp.Diagnostics.AddError("HTTP Request Creation Failed", err.Error())
 		return
@@ -217,6 +233,7 @@ func (d *CurlDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 
 	// Add headers.
 	applyRequestHeadersWithDefaults(request, data.Headers, d.providerMeta())
+	applyResolvedPayloadToRequest(request, payload)
 
 	// Add query parameters.
 	if !data.RequestParameters.IsNull() && !data.RequestParameters.IsUnknown() {
@@ -293,7 +310,7 @@ func (d *CurlDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 }
 
 func (d CurlDataSource) ConfigValidators(ctx context.Context) []datasource.ConfigValidator {
-	return []datasource.ConfigValidator{
+	validators := []datasource.ConfigValidator{
 		datasourcevalidator.RequiredTogether(
 			path.MatchRoot("cert_file"),
 			path.MatchRoot("key_file"),
@@ -307,4 +324,6 @@ func (d CurlDataSource) ConfigValidators(ctx context.Context) []datasource.Confi
 			path.MatchRoot("retry_interval"),
 		),
 	}
+	validators = append(validators, dataSourceBodyValidators("request_body", "request_body_file", "request_multipart")...)
+	return validators
 }
