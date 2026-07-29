@@ -43,76 +43,76 @@ func NewCurlEphemeralResource() ephemeral.EphemeralResource {
 }
 
 type CurlEphemeralModel struct {
-	Id                types.String     `tfsdk:"id"`
-	Name              types.String     `tfsdk:"name"`
-	Url               types.String     `tfsdk:"url"`
-	Method            types.String     `tfsdk:"method"`
+	Id                types.String          `tfsdk:"id"`
+	Name              types.String          `tfsdk:"name"`
+	Url               types.String          `tfsdk:"url"`
+	Method            types.String          `tfsdk:"method"`
 	RequestBody       types.String          `tfsdk:"request_body"`
 	RequestBodyFile   types.String          `tfsdk:"request_body_file"`
 	RequestMultipart  *MultipartConfigModel `tfsdk:"request_multipart"`
-	Headers           types.Map        `tfsdk:"headers"`
-	DigestAuth        *DigestAuthModel `tfsdk:"digest_auth"`
-	RequestParameters types.Map        `tfsdk:"request_parameters"`
-	RequestUrlString  types.String     `tfsdk:"request_url_string"`
-	CertFile          types.String     `tfsdk:"cert_file"`
-	KeyFile           types.String     `tfsdk:"key_file"`
-	CaCertFile        types.String     `tfsdk:"ca_cert_file"`
-	CaCertDirectory   types.String     `tfsdk:"ca_cert_directory"`
-	SkipTlsVerify     types.Bool       `tfsdk:"skip_tls_verify"`
-	RetryInterval     types.Int64      `tfsdk:"retry_interval"`
-	MaxRetry          types.Int64      `tfsdk:"max_retry"`
-	Timeout           types.Int64      `tfsdk:"timeout"`
-	Response          types.String     `tfsdk:"response"`
-	SensitiveResponse types.String     `tfsdk:"sensitive_response"`
-	ResponseSensitive types.Bool       `tfsdk:"response_sensitive"`
-	ResponseCodes     types.List       `tfsdk:"response_codes"`
-	StatusCode        types.String     `tfsdk:"status_code"`
-	SkipRenew         types.Bool       `tfsdk:"skip_renew"`
+	Headers           types.Map             `tfsdk:"headers"`
+	DigestAuth        *DigestAuthModel      `tfsdk:"digest_auth"`
+	RequestParameters types.Map             `tfsdk:"request_parameters"`
+	RequestUrlString  types.String          `tfsdk:"request_url_string"`
+	CertFile          types.String          `tfsdk:"cert_file"`
+	KeyFile           types.String          `tfsdk:"key_file"`
+	CaCertFile        types.String          `tfsdk:"ca_cert_file"`
+	CaCertDirectory   types.String          `tfsdk:"ca_cert_directory"`
+	SkipTlsVerify     types.Bool            `tfsdk:"skip_tls_verify"`
+	RetryInterval     types.Int64           `tfsdk:"retry_interval"`
+	MaxRetry          types.Int64           `tfsdk:"max_retry"`
+	Timeout           types.Int64           `tfsdk:"timeout"`
+	Response          types.String          `tfsdk:"response"`
+	SensitiveResponse types.String          `tfsdk:"sensitive_response"`
+	ResponseSensitive types.Bool            `tfsdk:"response_sensitive"`
+	ResponseCodes     types.List            `tfsdk:"response_codes"`
+	StatusCode        types.String          `tfsdk:"status_code"`
+	SkipRenew         types.Bool            `tfsdk:"skip_renew"`
 
-	RenewInterval          types.Int64      `tfsdk:"renew_interval"`
-	RenewUrl               types.String     `tfsdk:"renew_url"`
-	RenewMethod            types.String     `tfsdk:"renew_method"`
+	RenewInterval          types.Int64           `tfsdk:"renew_interval"`
+	RenewUrl               types.String          `tfsdk:"renew_url"`
+	RenewMethod            types.String          `tfsdk:"renew_method"`
 	RenewRequestBody       types.String          `tfsdk:"renew_request_body"`
 	RenewRequestBodyFile   types.String          `tfsdk:"renew_request_body_file"`
 	RenewRequestMultipart  *MultipartConfigModel `tfsdk:"renew_request_multipart"`
-	RenewHeaders           types.Map        `tfsdk:"renew_headers"`
-	RenewDigestAuth        *DigestAuthModel `tfsdk:"renew_digest_auth"`
-	RenewRequestParameters types.Map        `tfsdk:"renew_request_parameters"`
-	RenewRequestUrlString  types.String     `tfsdk:"renew_request_url_string"`
-	RenewCertFile          types.String     `tfsdk:"renew_cert_file"`
-	RenewKeyFile           types.String     `tfsdk:"renew_key_file"`
-	RenewCaCertFile        types.String     `tfsdk:"renew_ca_cert_file"`
-	RenewCaCertDirectory   types.String     `tfsdk:"renew_ca_cert_directory"`
-	RenewSkipTlsVerify     types.Bool       `tfsdk:"renew_skip_tls_verify"`
-	RenewRetryInterval     types.Int64      `tfsdk:"renew_retry_interval"`
-	RenewMaxRetry          types.Int64      `tfsdk:"renew_max_retry"`
-	RenewTimeout           types.Int64      `tfsdk:"renew_timeout"`
-	RenewResponse          types.String     `tfsdk:"renew_response"`
-	SensitiveRenewResponse types.String     `tfsdk:"sensitive_renew_response"`
-	RenewResponseCodes     types.List       `tfsdk:"renew_response_codes"`
+	RenewHeaders           types.Map             `tfsdk:"renew_headers"`
+	RenewDigestAuth        *DigestAuthModel      `tfsdk:"renew_digest_auth"`
+	RenewRequestParameters types.Map             `tfsdk:"renew_request_parameters"`
+	RenewRequestUrlString  types.String          `tfsdk:"renew_request_url_string"`
+	RenewCertFile          types.String          `tfsdk:"renew_cert_file"`
+	RenewKeyFile           types.String          `tfsdk:"renew_key_file"`
+	RenewCaCertFile        types.String          `tfsdk:"renew_ca_cert_file"`
+	RenewCaCertDirectory   types.String          `tfsdk:"renew_ca_cert_directory"`
+	RenewSkipTlsVerify     types.Bool            `tfsdk:"renew_skip_tls_verify"`
+	RenewRetryInterval     types.Int64           `tfsdk:"renew_retry_interval"`
+	RenewMaxRetry          types.Int64           `tfsdk:"renew_max_retry"`
+	RenewTimeout           types.Int64           `tfsdk:"renew_timeout"`
+	RenewResponse          types.String          `tfsdk:"renew_response"`
+	SensitiveRenewResponse types.String          `tfsdk:"sensitive_renew_response"`
+	RenewResponseCodes     types.List            `tfsdk:"renew_response_codes"`
 
 	SkipClose types.Bool `tfsdk:"skip_close"`
 
-	CloseUrl               types.String     `tfsdk:"close_url"`
-	CloseMethod            types.String     `tfsdk:"close_method"`
+	CloseUrl               types.String          `tfsdk:"close_url"`
+	CloseMethod            types.String          `tfsdk:"close_method"`
 	CloseRequestBody       types.String          `tfsdk:"close_request_body"`
 	CloseRequestBodyFile   types.String          `tfsdk:"close_request_body_file"`
 	CloseRequestMultipart  *MultipartConfigModel `tfsdk:"close_request_multipart"`
-	CloseHeaders           types.Map        `tfsdk:"close_headers"`
-	CloseDigestAuth        *DigestAuthModel `tfsdk:"close_digest_auth"`
-	CloseRequestParameters types.Map        `tfsdk:"close_request_parameters"`
-	CloseRequestUrlString  types.String     `tfsdk:"close_request_url_string"`
-	CloseCertFile          types.String     `tfsdk:"close_cert_file"`
-	CloseKeyFile           types.String     `tfsdk:"close_key_file"`
-	CloseCaCertFile        types.String     `tfsdk:"close_ca_cert_file"`
-	CloseCaCertDirectory   types.String     `tfsdk:"close_ca_cert_directory"`
-	CloseSkipTlsVerify     types.Bool       `tfsdk:"close_skip_tls_verify"`
-	CloseRetryInterval     types.Int64      `tfsdk:"close_retry_interval"`
-	CloseMaxRetry          types.Int64      `tfsdk:"close_max_retry"`
-	CloseTimeout           types.Int64      `tfsdk:"close_timeout"`
-	CloseResponse          types.String     `tfsdk:"close_response"`
-	SensitiveCloseResponse types.String     `tfsdk:"sensitive_close_response"`
-	CloseResponseCodes     types.List       `tfsdk:"close_response_codes"`
+	CloseHeaders           types.Map             `tfsdk:"close_headers"`
+	CloseDigestAuth        *DigestAuthModel      `tfsdk:"close_digest_auth"`
+	CloseRequestParameters types.Map             `tfsdk:"close_request_parameters"`
+	CloseRequestUrlString  types.String          `tfsdk:"close_request_url_string"`
+	CloseCertFile          types.String          `tfsdk:"close_cert_file"`
+	CloseKeyFile           types.String          `tfsdk:"close_key_file"`
+	CloseCaCertFile        types.String          `tfsdk:"close_ca_cert_file"`
+	CloseCaCertDirectory   types.String          `tfsdk:"close_ca_cert_directory"`
+	CloseSkipTlsVerify     types.Bool            `tfsdk:"close_skip_tls_verify"`
+	CloseRetryInterval     types.Int64           `tfsdk:"close_retry_interval"`
+	CloseMaxRetry          types.Int64           `tfsdk:"close_max_retry"`
+	CloseTimeout           types.Int64           `tfsdk:"close_timeout"`
+	CloseResponse          types.String          `tfsdk:"close_response"`
+	SensitiveCloseResponse types.String          `tfsdk:"sensitive_close_response"`
+	CloseResponseCodes     types.List            `tfsdk:"close_response_codes"`
 }
 
 func (e *EphemeralCurlResource) Schema(ctx context.Context, req ephemeral.SchemaRequest, resp *ephemeral.SchemaResponse) {
@@ -611,7 +611,7 @@ func (e *EphemeralCurlResource) Open(ctx context.Context, req ephemeral.OpenRequ
 		"RenewDigestAuth":        digestAuthToPrivateMap(data.RenewDigestAuth),
 		"RenewRequestParameters": convertMap(data.RenewRequestParameters),
 		"RenewRequestBody":       data.RenewRequestBody.ValueString(),
-		"RenewRequestBodyFile": data.RenewRequestBodyFile.ValueString(),
+		"RenewRequestBodyFile":   data.RenewRequestBodyFile.ValueString(),
 		"RenewRequestMultipart":  renewMultipartJSON,
 		"RenewRequestUrlString":  data.RenewRequestUrlString.ValueString(),
 		"RenewCertFile":          data.RenewCertFile.ValueString(),
@@ -633,7 +633,7 @@ func (e *EphemeralCurlResource) Open(ctx context.Context, req ephemeral.OpenRequ
 		"CloseDigestAuth":        digestAuthToPrivateMap(data.CloseDigestAuth),
 		"CloseRequestParameters": convertMap(data.CloseRequestParameters),
 		"CloseRequestBody":       data.CloseRequestBody.ValueString(),
-		"CloseRequestBodyFile": data.CloseRequestBodyFile.ValueString(),
+		"CloseRequestBodyFile":   data.CloseRequestBodyFile.ValueString(),
 		"CloseRequestMultipart":  closeMultipartJSON,
 		"CloseRequestUrlString":  data.CloseRequestUrlString.ValueString(),
 		"CloseCertFile":          data.CloseCertFile.ValueString(),

@@ -11,11 +11,11 @@ import (
 )
 
 const (
-	requestBodyFileDescription     = "Path to a file on local disk to use as the request body. File bytes are read at request time and are not stored in Terraform state."
-	requestMultipartDescription      = "Multipart form request body. The provider sets `Content-Type` with a generated boundary."
-	multipartPartNameDescription     = "Form field name."
-	multipartPartValueDescription    = "Text form field value."
-	multipartPartFilePathDescription = "Path to a file on local disk for this form field."
+	requestBodyFileDescription          = "Path to a file on local disk to use as the request body. File bytes are read at request time and are not stored in Terraform state."
+	requestMultipartDescription         = "Multipart form request body. The provider sets `Content-Type` with a generated boundary."
+	multipartPartNameDescription        = "Form field name."
+	multipartPartValueDescription       = "Text form field value."
+	multipartPartFilePathDescription    = "Path to a file on local disk for this form field."
 	multipartPartContentTypeDescription = "Optional Content-Type for this part. Defaults to `text/plain` for value parts and `application/octet-stream` for file parts."
 )
 

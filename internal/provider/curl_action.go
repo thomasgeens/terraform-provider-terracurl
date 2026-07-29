@@ -28,23 +28,23 @@ func NewCurlAction() action.Action {
 }
 
 type CurlActionModel struct {
-	URL               types.String     `tfsdk:"url"`
-	Method            types.String     `tfsdk:"method"`
+	URL               types.String          `tfsdk:"url"`
+	Method            types.String          `tfsdk:"method"`
 	RequestBody       types.String          `tfsdk:"request_body"`
 	RequestBodyFile   types.String          `tfsdk:"request_body_file"`
 	RequestMultipart  *MultipartConfigModel `tfsdk:"request_multipart"`
-	Headers           types.Map        `tfsdk:"headers"`
-	DigestAuth        *DigestAuthModel `tfsdk:"digest_auth"`
-	RequestParameters types.Map        `tfsdk:"request_parameters"`
-	CertFile          types.String     `tfsdk:"cert_file"`
-	KeyFile           types.String     `tfsdk:"key_file"`
-	CaCertFile        types.String     `tfsdk:"ca_cert_file"`
-	CaCertDirectory   types.String     `tfsdk:"ca_cert_directory"`
-	SkipTlsVerify     types.Bool       `tfsdk:"skip_tls_verify"`
-	RetryInterval     types.Int64      `tfsdk:"retry_interval"`
-	MaxRetry          types.Int64      `tfsdk:"max_retry"`
-	Timeout           types.Int64      `tfsdk:"timeout"`
-	ResponseCodes     types.List       `tfsdk:"response_codes"`
+	Headers           types.Map             `tfsdk:"headers"`
+	DigestAuth        *DigestAuthModel      `tfsdk:"digest_auth"`
+	RequestParameters types.Map             `tfsdk:"request_parameters"`
+	CertFile          types.String          `tfsdk:"cert_file"`
+	KeyFile           types.String          `tfsdk:"key_file"`
+	CaCertFile        types.String          `tfsdk:"ca_cert_file"`
+	CaCertDirectory   types.String          `tfsdk:"ca_cert_directory"`
+	SkipTlsVerify     types.Bool            `tfsdk:"skip_tls_verify"`
+	RetryInterval     types.Int64           `tfsdk:"retry_interval"`
+	MaxRetry          types.Int64           `tfsdk:"max_retry"`
+	Timeout           types.Int64           `tfsdk:"timeout"`
+	ResponseCodes     types.List            `tfsdk:"response_codes"`
 }
 
 func (c *CurlAction) Metadata(_ context.Context, req action.MetadataRequest, resp *action.MetadataResponse) {

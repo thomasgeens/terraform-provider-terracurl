@@ -332,11 +332,14 @@ func TestInvokeCurlActionMultipart(t *testing.T) {
 		t.Fatalf("status code got %d", response.StatusCode)
 	}
 
-	body := gotBody.Load().(string)
+	bodyValue, ok := gotBody.Load().(string)
+	if !ok {
+		t.Fatal("expected captured request body to be a string")
+	}
 	if !strings.HasPrefix(gotContentType, "multipart/form-data; boundary=") {
 		t.Fatalf("content type got %q", gotContentType)
 	}
-	if !strings.Contains(body, "demo") || !strings.Contains(body, "action-file") {
-		t.Fatalf("body got %q", body)
+	if !strings.Contains(bodyValue, "demo") || !strings.Contains(bodyValue, "action-file") {
+		t.Fatalf("body got %q", bodyValue)
 	}
 }

@@ -18,11 +18,11 @@ const responsePlaceholderPrefix = "{response."
 var responsePlaceholderPattern = regexp.MustCompile(`\{response\.([^}]+)\}`)
 
 type resolvedDestroyTemplates struct {
-	URL               string
-	Payload           resolvedRequestPayload
-	DestroyHeaders    types.Map
-	DestroyHeadersWo  types.Map
-	DestroyParams     types.Map
+	URL              string
+	Payload          resolvedRequestPayload
+	DestroyHeaders   types.Map
+	DestroyHeadersWo types.Map
+	DestroyParams    types.Map
 }
 
 func containsResponsePlaceholder(s string) bool {

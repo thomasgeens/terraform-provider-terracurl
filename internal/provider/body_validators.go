@@ -1,15 +1,15 @@
 package provider
 
 import (
+	actionvalidator "github.com/hashicorp/terraform-plugin-framework-validators/actionvalidator"
+	datasourcevalidator "github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
+	ephemeralvalidator "github.com/hashicorp/terraform-plugin-framework-validators/ephemeralvalidator"
+	resourcevalidator "github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/action"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	actionvalidator "github.com/hashicorp/terraform-plugin-framework-validators/actionvalidator"
-	datasourcevalidator "github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
-	ephemeralvalidator "github.com/hashicorp/terraform-plugin-framework-validators/ephemeralvalidator"
-	resourcevalidator "github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 )
 
 func resourceBodyValidators(body, bodyWo, bodyFile, bodyMultipart string) []resource.ConfigValidator {

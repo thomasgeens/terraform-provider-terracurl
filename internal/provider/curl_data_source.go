@@ -30,30 +30,30 @@ func NewCurlDataSource() datasource.DataSource {
 }
 
 type CurlDataSourceModel struct {
-	ID                types.String     `tfsdk:"id"`
-	Name              types.String     `tfsdk:"name"`
-	Url               types.String     `tfsdk:"url"`
-	Method            types.String     `tfsdk:"method"`
+	ID                types.String          `tfsdk:"id"`
+	Name              types.String          `tfsdk:"name"`
+	Url               types.String          `tfsdk:"url"`
+	Method            types.String          `tfsdk:"method"`
 	RequestBody       types.String          `tfsdk:"request_body"`
 	RequestBodyFile   types.String          `tfsdk:"request_body_file"`
 	RequestMultipart  *MultipartConfigModel `tfsdk:"request_multipart"`
-	Headers           types.Map        `tfsdk:"headers"`
-	DigestAuth        *DigestAuthModel `tfsdk:"digest_auth"`
-	RequestParameters types.Map        `tfsdk:"request_parameters"`
-	RequestUrlString  types.String     `tfsdk:"request_url_string"`
-	CertFile          types.String     `tfsdk:"cert_file"`
-	KeyFile           types.String     `tfsdk:"key_file"`
-	CaCertFile        types.String     `tfsdk:"ca_cert_file"`
-	CaCertDirectory   types.String     `tfsdk:"ca_cert_directory"`
-	SkipTlsVerify     types.Bool       `tfsdk:"skip_tls_verify"`
-	RetryInterval     types.Int64      `tfsdk:"retry_interval"`
-	MaxRetry          types.Int64      `tfsdk:"max_retry"`
-	Timeout           types.Int64      `tfsdk:"timeout"`
-	Response          types.String     `tfsdk:"response"`
-	SensitiveResponse types.String     `tfsdk:"sensitive_response"`
-	ResponseSensitive types.Bool       `tfsdk:"response_sensitive"`
-	ResponseCodes     types.List       `tfsdk:"response_codes"`
-	StatusCode        types.String     `tfsdk:"status_code"`
+	Headers           types.Map             `tfsdk:"headers"`
+	DigestAuth        *DigestAuthModel      `tfsdk:"digest_auth"`
+	RequestParameters types.Map             `tfsdk:"request_parameters"`
+	RequestUrlString  types.String          `tfsdk:"request_url_string"`
+	CertFile          types.String          `tfsdk:"cert_file"`
+	KeyFile           types.String          `tfsdk:"key_file"`
+	CaCertFile        types.String          `tfsdk:"ca_cert_file"`
+	CaCertDirectory   types.String          `tfsdk:"ca_cert_directory"`
+	SkipTlsVerify     types.Bool            `tfsdk:"skip_tls_verify"`
+	RetryInterval     types.Int64           `tfsdk:"retry_interval"`
+	MaxRetry          types.Int64           `tfsdk:"max_retry"`
+	Timeout           types.Int64           `tfsdk:"timeout"`
+	Response          types.String          `tfsdk:"response"`
+	SensitiveResponse types.String          `tfsdk:"sensitive_response"`
+	ResponseSensitive types.Bool            `tfsdk:"response_sensitive"`
+	ResponseCodes     types.List            `tfsdk:"response_codes"`
+	StatusCode        types.String          `tfsdk:"status_code"`
 }
 
 func (d *CurlDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {

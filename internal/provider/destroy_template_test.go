@@ -184,8 +184,8 @@ func TestValidateDestroyTemplates_SkipDestroy(t *testing.T) {
 
 func TestResolveDestroyTemplates_MultipartValuePlaceholder(t *testing.T) {
 	data := &CurlResourceModel{
-		Response:    types.StringValue(`{"id":"abc-123"}`),
-		DestroyUrl:  types.StringValue("https://example.com/destroy"),
+		Response:      types.StringValue(`{"id":"abc-123"}`),
+		DestroyUrl:    types.StringValue("https://example.com/destroy"),
 		DestroyMethod: types.StringValue("POST"),
 		DestroyRequestMultipart: multipartConfigFromParts(t, []map[string]string{
 			{"name": "id", "value": "{response.id}"},
