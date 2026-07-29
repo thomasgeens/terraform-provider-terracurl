@@ -1,0 +1,140 @@
+---
+page_title: "Destroy Response Templating"
+subcategory: "Guides"
+description: |-
+  Use {response.path} placeholders in destroy configuration to inject values from the stored create response at delete time.
+---
+
+# Destroy Response Templating
+
+Many REST APIs return a server-generated identifier when a resource is created. The delete API often requires that same identifier in the URL, request body, or query parameters. Terraform cannot reference a resource's own computed `response` attribute inside the same resource block, and TerraCurl reads destroy configuration from **stored state** at delete time rather than re-evaluating HCL expressions.
+
+TerraCurl resolves **`{response.<path>}`** placeholders in destroy fields from the stored create response JSON when the resource is destroyed.
+
+## When to use destroy templating
+
+Use placeholders when:
+
+- Create returns an ID (or other value) needed for delete
+- The value lives in the create response JSON at a known path
+- You manage create and destroy in a single `terracurl_request` resource
+
+## Placeholder syntax
+
+| Pattern | Meaning |
+|---------|---------|
+| `{response.id}` | Top-level `id` field in create response |
+| `{response.data.uuid}` | Nested field using dot-separated path |
+| `{response.items.0.id}` | Array element at index `0` |
+
+`{response...}` refers to the **stored create response JSON**, not the Terraform resource `id` (which is always `name`).
+
+Placeholders work in:
+
+- `destroy_url`
+- `destroy_request_body` and `destroy_request_body_wo`
+- `destroy_request_parameters` (map values)
+- `destroy_headers` and `destroy_headers_wo` (map values)
+
+If a string contains no `{response.` substring, it is passed through unchanged.
+
+## Example: delete by URL path
+
+```terraform
+resource "terracurl_request" "object" {
+  name           = "my-object"
+  url            = "https://api.example.com/objects"
+  method         = "POST"
+  request_body   = jsonencode({ name = "example" })
+  response_codes = [201]
+  skip_read      = true
+  skip_destroy   = false
+
+  destroy_url            = "https://api.example.com/objects/{response.id}"
+  destroy_method         = "DELETE"
+  destroy_response_codes = [200, 204]
+}
+```
+
+Create response `{"id":"abc-123"}` → destroy calls `DELETE .../objects/abc-123`.
+
+## Example: nested response field
+
+```terraform
+resource "terracurl_request" "object" {
+  name           = "my-object"
+  url            = "https://api.example.com/objects"
+  method         = "POST"
+  request_body   = jsonencode({ name = "example" })
+  response_codes = [201]
+  skip_read      = true
+  skip_destroy   = false
+
+  destroy_url            = "https://api.example.com/objects/{response.result.object_id}"
+  destroy_method         = "DELETE"
+  destroy_response_codes = [200]
+}
+```
+
+Create response:
+
+```json
+{
+  "status": "created",
+  "result": {
+    "object_id": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+```
+
+## Example: delete by request body
+
+```terraform
+resource "terracurl_request" "user" {
+  name           = "user"
+  url            = "https://api.example.com/users"
+  method         = "POST"
+  request_body   = jsonencode({ name = "john" })
+  response_codes = [201]
+  skip_read      = true
+  skip_destroy   = false
+
+  destroy_url            = "https://api.example.com/deactivate"
+  destroy_method         = "POST"
+  destroy_request_body   = jsonencode({ user_id = "{response.data.user.uuid}" })
+  destroy_response_codes = [200]
+}
+```
+
+## Create-time validation
+
+After a successful create, TerraCurl validates that all `{response...}` placeholders in destroy configuration resolve against the create response. Mis-typed paths (for example `{response.uuid}` when the API returns `{response.id}`) fail at apply time instead of during a later destroy.
+
+Validation is skipped when `skip_destroy = true`.
+
+## Sensitive responses
+
+When `response_sensitive = true`, placeholders resolve from `sensitive_response` in state. Template strings in destroy configuration remain in state as written; only the resolved values are sent on the wire at destroy time.
+
+## Escaping literal braces
+
+To include a literal `{response.id}` in a value without substitution, wrap the placeholder in double braces:
+
+```text
+{{ "{{response.id}}" }}
+```
+
+This renders as `{response.id}` in the outbound request.
+
+## Limitations
+
+- Placeholders require a valid JSON create response stored in state
+- Imported resources without a stored response cannot use destroy templating
+- Paths must reference fields that remain after `ignore_response_fields` sanitization
+- Only scalar values (string, number, boolean) can be substituted; objects and arrays as whole values are not supported
+- Read-time templating for `read_url` / `read_request_body` is not supported in this release
+
+## Related guides
+
+- [Default Headers for Auth Tokens](default_headers) — refresh auth headers on every Terraform run, including destroy
+- [Write-Only Headers and Request Bodies](write_only) — secrets in destroy bodies without persisting them in state

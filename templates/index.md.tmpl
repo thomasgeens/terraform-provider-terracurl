@@ -58,4 +58,12 @@ See the [Write-Only Headers and Request Bodies guide](guides/write_only) for ver
 
 {{ tffile "examples/provider/write_only_example.tf" }}
 
+## Destroy Response Templating
+
+TerraCurl resolves `{response.<path>}` placeholders in destroy URL, body, headers, and query parameters from the stored create response at delete time. This supports APIs that return a server-generated ID needed for delete without Terraform self-references.
+
+See the [Destroy Response Templating guide](guides/destroy_templating) for syntax, nested paths, body-based delete, and create-time validation.
+
+{{ tffile "examples/resources/destroy_templating_example/resource.tf" }}
+
 ## Limitations

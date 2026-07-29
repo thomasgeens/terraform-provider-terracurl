@@ -1,3 +1,9 @@
+## 2.9.0
+
+ENHANCEMENTS:
+
+- Add delete-time `{response.<path>}` templating in `terracurl_request` destroy URL, body, headers, and query parameters, resolved from the stored create response. Includes create-time validation and supports nested JSON paths. Closes #125.
+
 ## 2.8.0
 
 ENHANCEMENTS:

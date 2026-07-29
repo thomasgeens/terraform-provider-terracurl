@@ -34,21 +34,21 @@ When `skip_read` is `false` and `read_url`, `read_method`, and `read_response_co
 - `destroy_ca_cert_file` (String) Path to a file on local disk that will be used to validate the certificate presented by the server for the destroy call
 - `destroy_cert_file` (String) Path to a file on local disk that contains the PEM-encoded certificate to present to the server for the destroy call
 - `destroy_digest_auth` (Attributes, Sensitive) HTTP Digest authentication credentials for the destroy request. Overrides provider `default_digest_auth` when configured. (see [below for nested schema](#nestedatt--destroy_digest_auth))
-- `destroy_headers` (Map of String) Map of headers to attach to the destroy API call. Host (case-insensitive) overrides the HTTP Host header sent on the wire, independent of the URL hostname.
+- `destroy_headers` (Map of String) Map of headers to attach to the destroy API call. Host (case-insensitive) overrides the HTTP Host header sent on the wire, independent of the URL hostname. Values support `{response.<path>}` placeholders resolved from the stored create response at destroy time.
 - `destroy_headers_wo` (Map of String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only headers for the destroy call. Snapshotted in provider private state for use during destroy.
 - `destroy_headers_wo_version` (Number) Increment to trigger refreshing snapshotted `destroy_headers_wo` values.
 - `destroy_key_file` (String) Path to a file on local disk that contains the PEM-encoded private key for which the authentication certificate was issued for the destroy call
 - `destroy_max_retry` (Number) Maximum number of tries until it is marked as failed for the destroy call
 - `destroy_method` (String) Destroy HTTP method to use in the API call
-- `destroy_request_body` (String) A request body to attach to the destroy API call
+- `destroy_request_body` (String) A request body to attach to the destroy API call. Supports `{response.<path>}` placeholders resolved from the stored create response at destroy time.
 - `destroy_request_body_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only request body for the destroy call. Not stored in Terraform state.
 - `destroy_request_body_wo_version` (Number) Increment to trigger applying an updated `destroy_request_body_wo` value.
-- `destroy_request_parameters` (Map of String) Map of parameters to attach to the destroy API call
+- `destroy_request_parameters` (Map of String) Map of parameters to attach to the destroy API call. Values support `{response.<path>}` placeholders resolved from the stored create response at destroy time.
 - `destroy_response_codes` (List of String) A list of expected response codes for the destroy call
 - `destroy_retry_interval` (Number) Interval between each attempt for the destroy call
 - `destroy_skip_tls_verify` (Boolean) Set this to true to disable verification of the server's TLS certificate for the destroy call
 - `destroy_timeout` (Number) Time in seconds before each request times out for the destroy call. Defaults to 10
-- `destroy_url` (String) Destroy API endpoint to call
+- `destroy_url` (String) Destroy API endpoint to call. Supports `{response.<path>}` placeholders resolved from the stored create response at destroy time. See the [Destroy Response Templating guide](../guides/destroy_templating).
 - `digest_auth` (Attributes, Sensitive) HTTP Digest authentication credentials for the create request. Overrides provider `default_digest_auth` when configured. (see [below for nested schema](#nestedatt--digest_auth))
 - `headers` (Map of String) Map of headers to attach to the API call. Host (case-insensitive) overrides the HTTP Host header sent on the wire, independent of the URL hostname.
 - `headers_wo` (Map of String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only headers for the create call. Not stored in Terraform state. Requires Terraform 1.11 or later.
