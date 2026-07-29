@@ -157,6 +157,7 @@ func TestCurlResource_Delete_ProviderDefaultDigestAuth(t *testing.T) {
 	}
 
 	state := tfsdk.State{Schema: schemaResp.Schema}
+	nullWriteOnlyAttributes(&stateModel)
 	if diags := state.Set(ctx, &stateModel); diags.HasError() {
 		t.Fatalf("failed to set state: %v", diags)
 	}

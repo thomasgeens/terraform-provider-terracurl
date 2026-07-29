@@ -87,7 +87,7 @@ If credentials are set only in `destroy_digest_auth`, those values are persisted
 
 - HTTP Basic authentication is not built in; set a static `Authorization: Basic ...` header manually or use provider `default_headers`.
 - NTLM, Kerberos, and other enterprise proxy authentication mechanisms remain unsupported. See the [HTTP Proxy Support guide](proxy).
-- Digest credentials configured on resources are stored in Terraform state (marked sensitive). Write-only credentials are tracked separately in issue #115.
+- Digest credentials configured on resources are stored in Terraform state (marked sensitive). For credentials that must not appear in state, use write-only headers or provider `default_headers` where applicable. See the [Write-Only Headers and Request Bodies guide](write_only).
 - Custom `realm` or algorithm tuning is not exposed unless a real API requires it.
 
 ## Digest vs default_headers

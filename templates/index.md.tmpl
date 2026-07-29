@@ -50,4 +50,12 @@ See the [HTTP Digest Authentication guide](guides/digest_auth) for configuration
 
 {{ tffile "examples/provider/digest_auth_example.tf" }}
 
+## Write-Only Headers and Request Bodies
+
+TerraCurl supports write-only `headers_wo` and `request_body_wo` attributes on `terracurl_request` resources (Terraform 1.11+). Values are sent on HTTP calls but are not stored in Terraform state.
+
+See the [Write-Only Headers and Request Bodies guide](guides/write_only) for version attributes, read/destroy private-state behavior, and comparison with `default_headers`.
+
+{{ tffile "examples/provider/write_only_example.tf" }}
+
 ## Limitations

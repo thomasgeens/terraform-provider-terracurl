@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -23,6 +25,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -47,60 +50,72 @@ type CurlResource struct {
 
 // CurlResourceModel describes the resource data model.
 type CurlResourceModel struct {
-	Id                       types.String     `tfsdk:"id"`
-	Name                     types.String     `tfsdk:"name"`
-	Url                      types.String     `tfsdk:"url"`
-	Method                   types.String     `tfsdk:"method"`
-	RequestBody              types.String     `tfsdk:"request_body"`
-	Headers                  types.Map        `tfsdk:"headers"`
-	DigestAuth               *DigestAuthModel `tfsdk:"digest_auth"`
-	RequestParameters        types.Map        `tfsdk:"request_parameters"`
-	RequestUrlString         types.String     `tfsdk:"request_url_string"`
-	CertFile                 types.String     `tfsdk:"cert_file"`
-	KeyFile                  types.String     `tfsdk:"key_file"`
-	CaCertFile               types.String     `tfsdk:"ca_cert_file"`
-	CaCertDirectory          types.String     `tfsdk:"ca_cert_directory"`
-	SkipTlsVerify            types.Bool       `tfsdk:"skip_tls_verify"`
-	RetryInterval            types.Int64      `tfsdk:"retry_interval"`
-	MaxRetry                 types.Int64      `tfsdk:"max_retry"`
-	Timeout                  types.Int64      `tfsdk:"timeout"`
-	Response                 types.String     `tfsdk:"response"`
-	SensitiveResponse        types.String     `tfsdk:"sensitive_response"`
-	ResponseSensitive        types.Bool       `tfsdk:"response_sensitive"`
-	ResponseCodes            types.List       `tfsdk:"response_codes"`
-	StatusCode               types.String     `tfsdk:"status_code"`
-	SkipDestroy              types.Bool       `tfsdk:"skip_destroy"`
-	DestroyUrl               types.String     `tfsdk:"destroy_url"`
-	DestroyMethod            types.String     `tfsdk:"destroy_method"`
-	DestroyRequestBody       types.String     `tfsdk:"destroy_request_body"`
-	DestroyHeaders           types.Map        `tfsdk:"destroy_headers"`
-	DestroyDigestAuth        *DigestAuthModel `tfsdk:"destroy_digest_auth"`
-	DestroyRequestParameters types.Map        `tfsdk:"destroy_request_parameters"`
-	DestroyRequestUrlString  types.String     `tfsdk:"destroy_request_url_string"`
-	DestroyCertFile          types.String     `tfsdk:"destroy_cert_file"`
-	DestroyKeyFile           types.String     `tfsdk:"destroy_key_file"`
-	DestroyCaCertFile        types.String     `tfsdk:"destroy_ca_cert_file"`
-	DestroyCaCertDirectory   types.String     `tfsdk:"destroy_ca_cert_directory"`
-	DestroySkipTlsVerify     types.Bool       `tfsdk:"destroy_skip_tls_verify"`
-	DestroyRetryInterval     types.Int64      `tfsdk:"destroy_retry_interval"`
-	DestroyMaxRetry          types.Int64      `tfsdk:"destroy_max_retry"`
-	DestroyTimeout           types.Int64      `tfsdk:"destroy_timeout"`
-	DestroyResponseCodes     types.List       `tfsdk:"destroy_response_codes"`
-	SkipRead                 types.Bool       `tfsdk:"skip_read"`
-	ReadUrl                  types.String     `tfsdk:"read_url"`
-	ReadMethod               types.String     `tfsdk:"read_method"`
-	ReadHeaders              types.Map        `tfsdk:"read_headers"`
-	ReadDigestAuth           *DigestAuthModel `tfsdk:"read_digest_auth"`
-	ReadParameters           types.Map        `tfsdk:"read_parameters"`
-	ReadRequestBody          types.String     `tfsdk:"read_request_body"`
-	ReadCertFile             types.String     `tfsdk:"read_cert_file"`
-	ReadKeyFile              types.String     `tfsdk:"read_key_file"`
-	ReadCaCertFile           types.String     `tfsdk:"read_ca_cert_file"`
-	ReadCaCertDirectory      types.String     `tfsdk:"read_ca_cert_directory"`
-	ReadSkipTlsVerify        types.Bool       `tfsdk:"read_skip_tls_verify"`
-	ReadResponseCodes        types.List       `tfsdk:"read_response_codes"`
-	DriftMarker              types.String     `tfsdk:"drift_marker"`
-	IgnoreResponseFields     types.List       `tfsdk:"ignore_response_fields"`
+	Id                          types.String     `tfsdk:"id"`
+	Name                        types.String     `tfsdk:"name"`
+	Url                         types.String     `tfsdk:"url"`
+	Method                      types.String     `tfsdk:"method"`
+	RequestBody                 types.String     `tfsdk:"request_body"`
+	RequestBodyWo               types.String     `tfsdk:"request_body_wo"`
+	RequestBodyWoVersion        types.Int64      `tfsdk:"request_body_wo_version"`
+	Headers                     types.Map        `tfsdk:"headers"`
+	HeadersWo                   types.Map        `tfsdk:"headers_wo"`
+	HeadersWoVersion            types.Int64      `tfsdk:"headers_wo_version"`
+	DigestAuth                  *DigestAuthModel `tfsdk:"digest_auth"`
+	RequestParameters           types.Map        `tfsdk:"request_parameters"`
+	RequestUrlString            types.String     `tfsdk:"request_url_string"`
+	CertFile                    types.String     `tfsdk:"cert_file"`
+	KeyFile                     types.String     `tfsdk:"key_file"`
+	CaCertFile                  types.String     `tfsdk:"ca_cert_file"`
+	CaCertDirectory             types.String     `tfsdk:"ca_cert_directory"`
+	SkipTlsVerify               types.Bool       `tfsdk:"skip_tls_verify"`
+	RetryInterval               types.Int64      `tfsdk:"retry_interval"`
+	MaxRetry                    types.Int64      `tfsdk:"max_retry"`
+	Timeout                     types.Int64      `tfsdk:"timeout"`
+	Response                    types.String     `tfsdk:"response"`
+	SensitiveResponse           types.String     `tfsdk:"sensitive_response"`
+	ResponseSensitive           types.Bool       `tfsdk:"response_sensitive"`
+	ResponseCodes               types.List       `tfsdk:"response_codes"`
+	StatusCode                  types.String     `tfsdk:"status_code"`
+	SkipDestroy                 types.Bool       `tfsdk:"skip_destroy"`
+	DestroyUrl                  types.String     `tfsdk:"destroy_url"`
+	DestroyMethod               types.String     `tfsdk:"destroy_method"`
+	DestroyRequestBody          types.String     `tfsdk:"destroy_request_body"`
+	DestroyRequestBodyWo        types.String     `tfsdk:"destroy_request_body_wo"`
+	DestroyRequestBodyWoVersion types.Int64      `tfsdk:"destroy_request_body_wo_version"`
+	DestroyHeaders              types.Map        `tfsdk:"destroy_headers"`
+	DestroyHeadersWo            types.Map        `tfsdk:"destroy_headers_wo"`
+	DestroyHeadersWoVersion     types.Int64      `tfsdk:"destroy_headers_wo_version"`
+	DestroyDigestAuth           *DigestAuthModel `tfsdk:"destroy_digest_auth"`
+	DestroyRequestParameters    types.Map        `tfsdk:"destroy_request_parameters"`
+	DestroyRequestUrlString     types.String     `tfsdk:"destroy_request_url_string"`
+	DestroyCertFile             types.String     `tfsdk:"destroy_cert_file"`
+	DestroyKeyFile              types.String     `tfsdk:"destroy_key_file"`
+	DestroyCaCertFile           types.String     `tfsdk:"destroy_ca_cert_file"`
+	DestroyCaCertDirectory      types.String     `tfsdk:"destroy_ca_cert_directory"`
+	DestroySkipTlsVerify        types.Bool       `tfsdk:"destroy_skip_tls_verify"`
+	DestroyRetryInterval        types.Int64      `tfsdk:"destroy_retry_interval"`
+	DestroyMaxRetry             types.Int64      `tfsdk:"destroy_max_retry"`
+	DestroyTimeout              types.Int64      `tfsdk:"destroy_timeout"`
+	DestroyResponseCodes        types.List       `tfsdk:"destroy_response_codes"`
+	SkipRead                    types.Bool       `tfsdk:"skip_read"`
+	ReadUrl                     types.String     `tfsdk:"read_url"`
+	ReadMethod                  types.String     `tfsdk:"read_method"`
+	ReadHeaders                 types.Map        `tfsdk:"read_headers"`
+	ReadHeadersWo               types.Map        `tfsdk:"read_headers_wo"`
+	ReadHeadersWoVersion        types.Int64      `tfsdk:"read_headers_wo_version"`
+	ReadDigestAuth              *DigestAuthModel `tfsdk:"read_digest_auth"`
+	ReadParameters              types.Map        `tfsdk:"read_parameters"`
+	ReadRequestBody             types.String     `tfsdk:"read_request_body"`
+	ReadRequestBodyWo           types.String     `tfsdk:"read_request_body_wo"`
+	ReadRequestBodyWoVersion    types.Int64      `tfsdk:"read_request_body_wo_version"`
+	ReadCertFile                types.String     `tfsdk:"read_cert_file"`
+	ReadKeyFile                 types.String     `tfsdk:"read_key_file"`
+	ReadCaCertFile              types.String     `tfsdk:"read_ca_cert_file"`
+	ReadCaCertDirectory         types.String     `tfsdk:"read_ca_cert_directory"`
+	ReadSkipTlsVerify           types.Bool       `tfsdk:"read_skip_tls_verify"`
+	ReadResponseCodes           types.List       `tfsdk:"read_response_codes"`
+	DriftMarker                 types.String     `tfsdk:"drift_marker"`
+	IgnoreResponseFields        types.List       `tfsdk:"ignore_response_fields"`
 }
 
 func (r *CurlResource) Metadata(ctx context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -144,7 +159,12 @@ func (r *CurlResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
+				Validators: []validator.String{
+					stringvalidator.PreferWriteOnlyAttribute(path.MatchRoot("request_body_wo")),
+				},
 			},
+			"request_body_wo":         writeOnlyBodySchema("Write-only request body for the create call. Not stored in Terraform state. Requires Terraform 1.11 or later."),
+			"request_body_wo_version": writeOnlyVersionSchema("Increment to trigger applying an updated `request_body_wo` value."),
 			"headers": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
@@ -152,8 +172,13 @@ func (r *CurlResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				PlanModifiers: []planmodifier.Map{
 					mapplanmodifier.RequiresReplace(),
 				},
+				Validators: []validator.Map{
+					mapvalidator.PreferWriteOnlyAttribute(path.MatchRoot("headers_wo")),
+				},
 			},
-			"digest_auth": resourceDigestAuthSchema("HTTP Digest authentication credentials for the create request. Overrides provider `default_digest_auth` when configured."),
+			"headers_wo":         writeOnlyHeadersSchema("Write-only headers for the create call. Not stored in Terraform state. Requires Terraform 1.11 or later."),
+			"headers_wo_version": writeOnlyVersionSchema("Increment to trigger applying updated `headers_wo` values."),
+			"digest_auth":        resourceDigestAuthSchema("HTTP Digest authentication credentials for the create request. Overrides provider `default_digest_auth` when configured."),
 			"request_parameters": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
@@ -269,7 +294,12 @@ func (r *CurlResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
+				Validators: []validator.String{
+					stringvalidator.PreferWriteOnlyAttribute(path.MatchRoot("destroy_request_body_wo")),
+				},
 			},
+			"destroy_request_body_wo":         writeOnlyBodySchema("Write-only request body for the destroy call. Not stored in Terraform state."),
+			"destroy_request_body_wo_version": writeOnlyVersionSchema("Increment to trigger applying an updated `destroy_request_body_wo` value."),
 			"destroy_headers": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
@@ -277,8 +307,13 @@ func (r *CurlResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				PlanModifiers: []planmodifier.Map{
 					mapplanmodifier.RequiresReplace(),
 				},
+				Validators: []validator.Map{
+					mapvalidator.PreferWriteOnlyAttribute(path.MatchRoot("destroy_headers_wo")),
+				},
 			},
-			"destroy_digest_auth": resourceDigestAuthSchema("HTTP Digest authentication credentials for the destroy request. Overrides provider `default_digest_auth` when configured."),
+			"destroy_headers_wo":         writeOnlyHeadersSchema("Write-only headers for the destroy call. Snapshotted in provider private state for use during destroy."),
+			"destroy_headers_wo_version": writeOnlyVersionSchema("Increment to trigger refreshing snapshotted `destroy_headers_wo` values."),
+			"destroy_digest_auth":        resourceDigestAuthSchema("HTTP Digest authentication credentials for the destroy request. Overrides provider `default_digest_auth` when configured."),
 			"destroy_request_parameters": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
@@ -367,13 +402,23 @@ func (r *CurlResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				ElementType:         types.StringType,
 				Optional:            true,
 				MarkdownDescription: "Map of headers for the read request." + hostHeaderMarkdownSuffix,
+				Validators: []validator.Map{
+					mapvalidator.PreferWriteOnlyAttribute(path.MatchRoot("read_headers_wo")),
+				},
 			},
-			"read_digest_auth": resourceDigestAuthSchema("HTTP Digest authentication credentials for the read request. Overrides provider `default_digest_auth` when configured."),
+			"read_headers_wo":         writeOnlyHeadersSchema("Write-only headers for the read call. Snapshotted in provider private state for drift detection."),
+			"read_headers_wo_version": writeOnlyVersionSchema("Increment to trigger refreshing snapshotted `read_headers_wo` values."),
+			"read_digest_auth":        resourceDigestAuthSchema("HTTP Digest authentication credentials for the read request. Overrides provider `default_digest_auth` when configured."),
 
 			"read_request_body": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Optional request body to use for the read request.",
+				Validators: []validator.String{
+					stringvalidator.PreferWriteOnlyAttribute(path.MatchRoot("read_request_body_wo")),
+				},
 			},
+			"read_request_body_wo":         writeOnlyBodySchema("Write-only request body for the read call. Snapshotted in provider private state for drift detection."),
+			"read_request_body_wo_version": writeOnlyVersionSchema("Increment to trigger refreshing snapshotted `read_request_body_wo` values."),
 
 			"read_parameters": schema.MapAttribute{
 				Optional:            true,
@@ -459,6 +504,17 @@ func (r *CurlResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
+	resp.Diagnostics.Append(mergeWriteOnlyFromConfig(ctx, req.Config, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var configModel CurlResourceModel
+	resp.Diagnostics.Append(req.Config.Get(ctx, &configModel)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	if !data.SkipRead.IsNull() && !data.SkipRead.ValueBool() {
 		tflog.Debug(ctx, "skip_read validation triggered", map[string]interface{}{
 			"skip_read_is_null":   data.SkipRead.IsNull(),
@@ -513,7 +569,7 @@ func (r *CurlResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	reqBody := []byte(data.RequestBody.ValueString())
+	reqBody, usedWriteOnlyBody := resolveRequestBody(data.RequestBody, data.RequestBodyWo)
 	request, err := http.NewRequest(data.Method.ValueString(), data.Url.ValueString(), bytes.NewBuffer(reqBody))
 	if err != nil {
 		resp.Diagnostics.AddError("HTTP Request Creation Failed", err.Error())
@@ -521,7 +577,7 @@ func (r *CurlResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	// Add headers
-	applyRequestHeadersWithDefaults(request, data.Headers, r.providerMeta())
+	applyRequestHeadersWithWriteOnly(request, data.Headers, data.HeadersWo, r.providerMeta())
 
 	// Add query parameters
 	if !data.RequestParameters.IsNull() && !data.RequestParameters.IsUnknown() {
@@ -535,7 +591,7 @@ func (r *CurlResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 	data.RequestUrlString = types.StringValue(request.URL.String())
 
-	tflog.Debug(ctx, fmt.Sprintf("Resource create API Call: \nURL: %s\nHeaders: %s\nMethod: %s\nRequest Body: %s\n", request.URL.String(), request.Header, request.Method, data.RequestBody.ValueString()))
+	tflog.Debug(ctx, fmt.Sprintf("Resource create API Call: \nURL: %s\nHeaders: %s\nMethod: %s\nRequest Body: %s\n", request.URL.String(), request.Header, request.Method, requestBodyForLog(data.RequestBody, data.RequestBodyWo, usedWriteOnlyBody)))
 	timeout := 10 * time.Second
 	if !data.Timeout.IsNull() {
 		timeout = time.Duration(data.Timeout.ValueInt64()) * time.Second
@@ -606,6 +662,11 @@ func (r *CurlResource) Create(ctx context.Context, req resource.CreateRequest, r
 	data.RequestUrlString = types.StringValue(request.URL.String())
 	setResourceResponseValues(&data, sanitizedResponse)
 	data.StatusCode = types.StringValue(strconv.Itoa(statusCode))
+	resp.Diagnostics.Append(snapshotWriteOnlyToPrivate(ctx, configModel, resp.Private)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	nullWriteOnlyAttributes(&data)
 	diags := resp.State.Set(ctx, &data)
 	resp.Diagnostics.Append(diags...)
 }
@@ -641,9 +702,10 @@ func (r *CurlResource) executeReadRequest(ctx context.Context, data CurlResource
 		return
 	}
 
-	var reqBody io.Reader = nil
-	if !data.ReadRequestBody.IsNull() && !data.ReadRequestBody.IsUnknown() {
-		reqBody = bytes.NewBuffer([]byte(data.ReadRequestBody.ValueString()))
+	var reqBody io.Reader
+	reqBodyBytes, usedWriteOnlyBody := resolveRequestBody(data.ReadRequestBody, data.ReadRequestBodyWo)
+	if len(reqBodyBytes) > 0 {
+		reqBody = bytes.NewBuffer(reqBodyBytes)
 	}
 
 	request, err := http.NewRequest(data.ReadMethod.ValueString(), data.ReadUrl.ValueString(), reqBody)
@@ -652,7 +714,7 @@ func (r *CurlResource) executeReadRequest(ctx context.Context, data CurlResource
 		return
 	}
 
-	applyRequestHeadersWithDefaults(request, data.ReadHeaders, r.providerMeta())
+	applyRequestHeadersWithWriteOnly(request, data.ReadHeaders, data.ReadHeadersWo, r.providerMeta())
 
 	if !data.ReadParameters.IsNull() && !data.ReadParameters.IsUnknown() {
 		params := request.URL.Query()
@@ -664,7 +726,7 @@ func (r *CurlResource) executeReadRequest(ctx context.Context, data CurlResource
 		request.URL.RawQuery = params.Encode()
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Resource read API Call: \nURL: %s\nHeaders: %s\nMethod: %s\nRequest Body: %s\n", request.URL.String(), request.Header, request.Method, data.ReadRequestBody.ValueString()))
+	tflog.Debug(ctx, fmt.Sprintf("Resource read API Call: \nURL: %s\nHeaders: %s\nMethod: %s\nRequest Body: %s\n", request.URL.String(), request.Header, request.Method, requestBodyForLog(data.ReadRequestBody, data.ReadRequestBodyWo, usedWriteOnlyBody)))
 
 	httpResp, err := client.Do(request)
 	if err != nil {
@@ -750,8 +812,14 @@ func (r *CurlResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
+	resp.Diagnostics.Append(loadWriteOnlyFromPrivate(ctx, req.Private, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	if data.SkipRead.ValueBool() {
 		tflog.Debug(ctx, "Skipping Read() as skip_read is true")
+		resp.Private = req.Private
 		return
 	}
 
@@ -771,7 +839,9 @@ func (r *CurlResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 		setResourceResponseValues(&data, result.SanitizedResponse)
 	}
 
+	nullWriteOnlyAttributes(&data)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	resp.Private = req.Private
 }
 
 func (r *CurlResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
@@ -781,6 +851,11 @@ func (r *CurlResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 
 	var data CurlResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(loadWriteOnlyFromPrivate(ctx, req.Private, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -810,20 +885,32 @@ func (r *CurlResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 			"The read response does not match stored state. Terraform will replace this resource to reconcile configuration.",
 		)
 	}
+
+	resp.Private = req.Private
 }
 
 func (r *CurlResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	var data CurlResourceModel
+	var plan CurlResourceModel
+	var state CurlResourceModel
+	var config CurlResourceModel
 
-	// Read Terraform plan data into the model
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
-
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Save updated data into Terraform state
-	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
+	resp.Private = req.Private
+	if writeOnlyVersionsChanged(state, config) {
+		resp.Diagnostics.Append(snapshotWriteOnlyToPrivate(ctx, config, resp.Private)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
+	nullWriteOnlyAttributes(&plan)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
 func (r *CurlResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -831,6 +918,11 @@ func (r *CurlResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	// Read prior state into model
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(loadWriteOnlyFromPrivate(ctx, req.Private, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -867,9 +959,10 @@ func (r *CurlResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 
 	// Build Destroy Request
-	var reqBody io.Reader = nil
-	if !data.DestroyRequestBody.IsNull() && !data.DestroyRequestBody.IsUnknown() {
-		reqBody = bytes.NewBuffer([]byte(data.DestroyRequestBody.ValueString()))
+	var reqBody io.Reader
+	destroyBody, usedWriteOnlyBody := resolveRequestBody(data.DestroyRequestBody, data.DestroyRequestBodyWo)
+	if len(destroyBody) > 0 {
+		reqBody = bytes.NewBuffer(destroyBody)
 	}
 
 	request, err := http.NewRequest(data.DestroyMethod.ValueString(), data.DestroyUrl.ValueString(), reqBody)
@@ -879,7 +972,7 @@ func (r *CurlResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 
 	// Add Headers
-	applyRequestHeadersWithDefaults(request, data.DestroyHeaders, r.providerMeta())
+	applyRequestHeadersWithWriteOnly(request, data.DestroyHeaders, data.DestroyHeadersWo, r.providerMeta())
 
 	// Add Query Parameters
 	if !data.DestroyRequestParameters.IsNull() && !data.DestroyRequestParameters.IsUnknown() {
@@ -897,7 +990,7 @@ func (r *CurlResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	retryInterval := time.Duration(data.DestroyRetryInterval.ValueInt64()) * time.Second
 	maxRetry := int(data.DestroyMaxRetry.ValueInt64())
 
-	tflog.Debug(ctx, fmt.Sprintf("Resource destroy API Call: \nURL: %s\nHeaders: %s\nMethod: %s\nRequest Body: %s\n", request.URL.String(), request.Header, request.Method, data.RequestBody.ValueString()))
+	tflog.Debug(ctx, fmt.Sprintf("Resource destroy API Call: \nURL: %s\nHeaders: %s\nMethod: %s\nRequest Body: %s\n", request.URL.String(), request.Header, request.Method, requestBodyForLog(data.DestroyRequestBody, data.DestroyRequestBodyWo, usedWriteOnlyBody)))
 
 	var bodyBytes []byte
 	var statusCode int
@@ -985,6 +1078,18 @@ func (r CurlResource) ConfigValidators(ctx context.Context) []resource.ConfigVal
 			path.MatchRoot("read_method"),
 			path.MatchRoot("read_response_codes"),
 		),
+		resourcevalidator.Conflicting(path.MatchRoot("headers"), path.MatchRoot("headers_wo")),
+		resourcevalidator.Conflicting(path.MatchRoot("request_body"), path.MatchRoot("request_body_wo")),
+		resourcevalidator.Conflicting(path.MatchRoot("read_headers"), path.MatchRoot("read_headers_wo")),
+		resourcevalidator.Conflicting(path.MatchRoot("read_request_body"), path.MatchRoot("read_request_body_wo")),
+		resourcevalidator.Conflicting(path.MatchRoot("destroy_headers"), path.MatchRoot("destroy_headers_wo")),
+		resourcevalidator.Conflicting(path.MatchRoot("destroy_request_body"), path.MatchRoot("destroy_request_body_wo")),
+		resourcevalidator.RequiredTogether(path.MatchRoot("headers_wo"), path.MatchRoot("headers_wo_version")),
+		resourcevalidator.RequiredTogether(path.MatchRoot("request_body_wo"), path.MatchRoot("request_body_wo_version")),
+		resourcevalidator.RequiredTogether(path.MatchRoot("read_headers_wo"), path.MatchRoot("read_headers_wo_version")),
+		resourcevalidator.RequiredTogether(path.MatchRoot("read_request_body_wo"), path.MatchRoot("read_request_body_wo_version")),
+		resourcevalidator.RequiredTogether(path.MatchRoot("destroy_headers_wo"), path.MatchRoot("destroy_headers_wo_version")),
+		resourcevalidator.RequiredTogether(path.MatchRoot("destroy_request_body_wo"), path.MatchRoot("destroy_request_body_wo_version")),
 	}
 }
 
@@ -1137,6 +1242,8 @@ func (r *CurlResource) UpgradeState(ctx context.Context) map[int64]resource.Stat
 				oldState.ReadCaCertDirectory = types.StringNull()
 				oldState.ReadSkipTlsVerify = types.BoolNull()
 				oldState.ReadResponseCodes = types.ListNull(types.StringType)
+
+				nullWriteOnlyAttributes(&oldState)
 
 				// Set the upgraded state
 				diags = resp.State.Set(ctx, oldState)
