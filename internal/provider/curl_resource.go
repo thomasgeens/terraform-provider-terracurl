@@ -276,7 +276,7 @@ func (r *CurlResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 
 			"destroy_url": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Destroy API endpoint to call",
+				MarkdownDescription: "Destroy API endpoint to call. Supports `{response.<path>}` placeholders resolved from the stored create response at destroy time. See the [Destroy Response Templating guide](../guides/destroy_templating).",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -290,7 +290,7 @@ func (r *CurlResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			},
 			"destroy_request_body": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "A request body to attach to the destroy API call",
+				MarkdownDescription: "A request body to attach to the destroy API call. Supports `{response.<path>}` placeholders resolved from the stored create response at destroy time.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -303,7 +303,7 @@ func (r *CurlResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			"destroy_headers": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
-				MarkdownDescription: "Map of headers to attach to the destroy API call." + hostHeaderMarkdownSuffix,
+				MarkdownDescription: "Map of headers to attach to the destroy API call." + hostHeaderMarkdownSuffix + " Values support `{response.<path>}` placeholders resolved from the stored create response at destroy time.",
 				PlanModifiers: []planmodifier.Map{
 					mapplanmodifier.RequiresReplace(),
 				},
@@ -317,7 +317,7 @@ func (r *CurlResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 			"destroy_request_parameters": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
-				MarkdownDescription: "Map of parameters to attach to the destroy API call",
+				MarkdownDescription: "Map of parameters to attach to the destroy API call. Values support `{response.<path>}` placeholders resolved from the stored create response at destroy time.",
 				PlanModifiers: []planmodifier.Map{
 					mapplanmodifier.RequiresReplace(),
 				},
@@ -662,6 +662,14 @@ func (r *CurlResource) Create(ctx context.Context, req resource.CreateRequest, r
 	data.RequestUrlString = types.StringValue(request.URL.String())
 	setResourceResponseValues(&data, sanitizedResponse)
 	data.StatusCode = types.StringValue(strconv.Itoa(statusCode))
+
+	if !data.SkipDestroy.ValueBool() {
+		resp.Diagnostics.Append(validateDestroyTemplates(data)...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
 	resp.Diagnostics.Append(snapshotWriteOnlyToPrivate(ctx, configModel, resp.Private)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -958,26 +966,31 @@ func (r *CurlResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 		return
 	}
 
-	// Build Destroy Request
-	var reqBody io.Reader
-	destroyBody, usedWriteOnlyBody := resolveRequestBody(data.DestroyRequestBody, data.DestroyRequestBodyWo)
-	if len(destroyBody) > 0 {
-		reqBody = bytes.NewBuffer(destroyBody)
+	resolved, templateDiags := resolveDestroyTemplates(&data)
+	resp.Diagnostics.Append(templateDiags...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	request, err := http.NewRequest(data.DestroyMethod.ValueString(), data.DestroyUrl.ValueString(), reqBody)
+	// Build Destroy Request
+	var reqBody io.Reader
+	if len(resolved.Body) > 0 {
+		reqBody = bytes.NewBuffer(resolved.Body)
+	}
+
+	request, err := http.NewRequest(data.DestroyMethod.ValueString(), resolved.URL, reqBody)
 	if err != nil {
 		resp.Diagnostics.AddError("Destroy Error", fmt.Sprintf("Failed to create request: %s", err))
 		return
 	}
 
 	// Add Headers
-	applyRequestHeadersWithWriteOnly(request, data.DestroyHeaders, data.DestroyHeadersWo, r.providerMeta())
+	applyRequestHeadersWithWriteOnly(request, resolved.DestroyHeaders, resolved.DestroyHeadersWo, r.providerMeta())
 
 	// Add Query Parameters
-	if !data.DestroyRequestParameters.IsNull() && !data.DestroyRequestParameters.IsUnknown() {
+	if !resolved.DestroyParams.IsNull() && !resolved.DestroyParams.IsUnknown() {
 		params := request.URL.Query()
-		for k, v := range data.DestroyRequestParameters.Elements() {
+		for k, v := range resolved.DestroyParams.Elements() {
 			if strVal, ok := v.(types.String); ok {
 				params.Add(k, strVal.ValueString())
 			}
@@ -990,7 +1003,7 @@ func (r *CurlResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	retryInterval := time.Duration(data.DestroyRetryInterval.ValueInt64()) * time.Second
 	maxRetry := int(data.DestroyMaxRetry.ValueInt64())
 
-	tflog.Debug(ctx, fmt.Sprintf("Resource destroy API Call: \nURL: %s\nHeaders: %s\nMethod: %s\nRequest Body: %s\n", request.URL.String(), request.Header, request.Method, requestBodyForLog(data.DestroyRequestBody, usedWriteOnlyBody)))
+	tflog.Debug(ctx, fmt.Sprintf("Resource destroy API Call: \nURL: %s\nHeaders: %s\nMethod: %s\nRequest Body: %s\n", request.URL.String(), request.Header, request.Method, requestBodyForLog(data.DestroyRequestBody, resolved.BodyUsedWriteOnly)))
 
 	var bodyBytes []byte
 	var statusCode int

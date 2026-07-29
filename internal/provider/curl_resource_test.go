@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/jarcoal/httpmock"
+	"io"
 	"net/http"
 	"os"
 	"testing"
@@ -191,6 +192,166 @@ EOF
 
 
 }`, name, requestBody, requestBody)
+}
+
+func TestAccresourceCurlDestroyTemplatingFlatID(t *testing.T) {
+	t.Setenv("TF_ACC", "true")
+	t.Setenv("USE_DEFAULT_CLIENT_FOR_TESTS", "true")
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	httpmock.RegisterResponder(
+		"POST",
+		"https://example.com/create",
+		httpmock.NewStringResponder(201, `{"id":"uuid-123"}`),
+	)
+	httpmock.RegisterResponder(
+		"DELETE",
+		"https://example.com/objects/uuid-123",
+		httpmock.NewStringResponder(200, `{}`),
+	)
+
+	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testMockEndpointCount("DELETE https://example.com/objects/uuid-123", 1),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccresourceCurlDestroyTemplatingFlatID(rName),
+			},
+		},
+	})
+}
+
+func testAccresourceCurlDestroyTemplatingFlatID(name string) string {
+	return fmt.Sprintf(`
+resource "terracurl_request" "templated_destroy" {
+  name           = "%s"
+  url            = "https://example.com/create"
+  method         = "POST"
+  request_body   = jsonencode({ name = "example" })
+  response_codes = [201]
+  skip_read      = true
+  skip_destroy   = false
+
+  destroy_url            = "https://example.com/objects/{response.id}"
+  destroy_method         = "DELETE"
+  destroy_response_codes = [200]
+}
+`, name)
+}
+
+func TestAccresourceCurlDestroyTemplatingNestedID(t *testing.T) {
+	t.Setenv("TF_ACC", "true")
+	t.Setenv("USE_DEFAULT_CLIENT_FOR_TESTS", "true")
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	httpmock.RegisterResponder(
+		"POST",
+		"https://example.com/create",
+		httpmock.NewStringResponder(201, `{"data":{"object_id":"nested-456"}}`),
+	)
+	httpmock.RegisterResponder(
+		"DELETE",
+		"https://example.com/objects/nested-456",
+		httpmock.NewStringResponder(200, `{}`),
+	)
+
+	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy:             testMockEndpointCount("DELETE https://example.com/objects/nested-456", 1),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccresourceCurlDestroyTemplatingNestedID(rName),
+			},
+		},
+	})
+}
+
+func testAccresourceCurlDestroyTemplatingNestedID(name string) string {
+	return fmt.Sprintf(`
+resource "terracurl_request" "templated_destroy" {
+  name           = "%s"
+  url            = "https://example.com/create"
+  method         = "POST"
+  request_body   = jsonencode({ name = "example" })
+  response_codes = [201]
+  skip_read      = true
+  skip_destroy   = false
+
+  destroy_url            = "https://example.com/objects/{response.data.object_id}"
+  destroy_method         = "DELETE"
+  destroy_response_codes = [200]
+}
+`, name)
+}
+
+func TestAccresourceCurlDestroyTemplatingBody(t *testing.T) {
+	t.Setenv("TF_ACC", "true")
+	t.Setenv("USE_DEFAULT_CLIENT_FOR_TESTS", "true")
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	httpmock.RegisterResponder(
+		"POST",
+		"https://example.com/create",
+		httpmock.NewStringResponder(201, `{"id":"uuid-123"}`),
+	)
+
+	var capturedDestroyBody string
+	httpmock.RegisterResponder(
+		"POST",
+		"https://example.com/deactivate",
+		func(req *http.Request) (*http.Response, error) {
+			body, _ := io.ReadAll(req.Body)
+			capturedDestroyBody = string(body)
+			return httpmock.NewStringResponse(200, `{}`), nil
+		},
+	)
+
+	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		CheckDestroy: func(s *terraform.State) error {
+			expected := `{"id":"uuid-123"}`
+			if capturedDestroyBody != expected {
+				return fmt.Errorf("destroy body %q, expected %q", capturedDestroyBody, expected)
+			}
+			return testMockEndpointCount("POST https://example.com/deactivate", 1)(s)
+		},
+		Steps: []resource.TestStep{
+			{
+				Config: testAccresourceCurlDestroyTemplatingBody(rName),
+			},
+		},
+	})
+}
+
+func testAccresourceCurlDestroyTemplatingBody(name string) string {
+	return fmt.Sprintf(`
+resource "terracurl_request" "templated_destroy" {
+  name           = "%s"
+  url            = "https://example.com/create"
+  method         = "POST"
+  request_body   = jsonencode({ name = "example" })
+  response_codes = [201]
+  skip_read      = true
+  skip_destroy   = false
+
+  destroy_url            = "https://example.com/deactivate"
+  destroy_method         = "POST"
+  destroy_request_body   = jsonencode({ id = "{response.id}" })
+  destroy_response_codes = [200]
+}
+`, name)
 }
 
 func TestAccresourceCurlSkipDestroy(t *testing.T) {
