@@ -80,7 +80,7 @@ Provider headers win on key collision. This ensures a fresh provider token repla
 ## Limitations
 
 - Tokens set only in resource `headers` or `destroy_headers` are still persisted in state. For destroy-only refresh, move auth to `default_headers` or run `terraform apply` before destroy to update state.
-- Write-only resource headers (see issue #115) are a separate follow-up to avoid persisting secrets in state entirely.
+- Write-only resource headers (see the [Write-Only Headers and Request Bodies guide](write_only)) avoid persisting secrets in state entirely.
 - `default_headers` is marked sensitive in the provider schema and will not appear in plan output.
 
 ## Workaround without default_headers

@@ -1019,64 +1019,76 @@ func TestCurlResource_StateUpgrade(t *testing.T) {
 	// Define the complete schema
 	schemaVar := schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"id":                     schema.StringAttribute{Computed: true},
-			"name":                   schema.StringAttribute{Optional: true},
-			"url":                    schema.StringAttribute{Required: true},
-			"method":                 schema.StringAttribute{Optional: true},
-			"headers":                schema.MapAttribute{ElementType: types.StringType, Optional: true},
-			"request_parameters":     schema.MapAttribute{ElementType: types.StringType, Optional: true},
-			"request_body":           schema.StringAttribute{Optional: true},
-			"cert_file":              schema.StringAttribute{Optional: true},
-			"key_file":               schema.StringAttribute{Optional: true},
-			"ca_cert_file":           schema.StringAttribute{Optional: true},
-			"ca_cert_directory":      schema.StringAttribute{Optional: true},
-			"skip_tls_verify":        schema.BoolAttribute{Optional: true},
-			"digest_auth":            resourceDigestAuthSchema(""),
-			"timeout":                schema.Int64Attribute{Optional: true},
-			"response_codes":         schema.ListAttribute{ElementType: types.StringType, Optional: true},
-			"status_code":            schema.StringAttribute{Computed: true},
-			"response":               schema.StringAttribute{Computed: true},
-			"sensitive_response":     schema.StringAttribute{Computed: true, Sensitive: true},
-			"response_sensitive":     schema.BoolAttribute{Optional: true, Computed: true},
-			"request_url_string":     schema.StringAttribute{Computed: true},
-			"max_retry":              schema.Int64Attribute{Optional: true},
-			"retry_interval":         schema.Int64Attribute{Optional: true},
-			"ignore_response_fields": schema.ListAttribute{ElementType: types.StringType, Optional: true},
-			"drift_marker":           schema.StringAttribute{Optional: true},
+			"id":                      schema.StringAttribute{Computed: true},
+			"name":                    schema.StringAttribute{Optional: true},
+			"url":                     schema.StringAttribute{Required: true},
+			"method":                  schema.StringAttribute{Optional: true},
+			"headers":                 schema.MapAttribute{ElementType: types.StringType, Optional: true},
+			"headers_wo":              writeOnlyHeadersSchema(""),
+			"headers_wo_version":      writeOnlyVersionSchema(""),
+			"request_body_wo":         writeOnlyBodySchema(""),
+			"request_body_wo_version": writeOnlyVersionSchema(""),
+			"request_parameters":      schema.MapAttribute{ElementType: types.StringType, Optional: true},
+			"request_body":            schema.StringAttribute{Optional: true},
+			"cert_file":               schema.StringAttribute{Optional: true},
+			"key_file":                schema.StringAttribute{Optional: true},
+			"ca_cert_file":            schema.StringAttribute{Optional: true},
+			"ca_cert_directory":       schema.StringAttribute{Optional: true},
+			"skip_tls_verify":         schema.BoolAttribute{Optional: true},
+			"digest_auth":             resourceDigestAuthSchema(""),
+			"timeout":                 schema.Int64Attribute{Optional: true},
+			"response_codes":          schema.ListAttribute{ElementType: types.StringType, Optional: true},
+			"status_code":             schema.StringAttribute{Computed: true},
+			"response":                schema.StringAttribute{Computed: true},
+			"sensitive_response":      schema.StringAttribute{Computed: true, Sensitive: true},
+			"response_sensitive":      schema.BoolAttribute{Optional: true, Computed: true},
+			"request_url_string":      schema.StringAttribute{Computed: true},
+			"max_retry":               schema.Int64Attribute{Optional: true},
+			"retry_interval":          schema.Int64Attribute{Optional: true},
+			"ignore_response_fields":  schema.ListAttribute{ElementType: types.StringType, Optional: true},
+			"drift_marker":            schema.StringAttribute{Optional: true},
 
 			// Read-related fields
-			"skip_read":              schema.BoolAttribute{Optional: true},
-			"read_url":               schema.StringAttribute{Optional: true},
-			"read_method":            schema.StringAttribute{Optional: true},
-			"read_headers":           schema.MapAttribute{ElementType: types.StringType, Optional: true},
-			"read_parameters":        schema.MapAttribute{ElementType: types.StringType, Optional: true},
-			"read_request_body":      schema.StringAttribute{Optional: true},
-			"read_cert_file":         schema.StringAttribute{Optional: true},
-			"read_key_file":          schema.StringAttribute{Optional: true},
-			"read_ca_cert_file":      schema.StringAttribute{Optional: true},
-			"read_ca_cert_directory": schema.StringAttribute{Optional: true},
-			"read_skip_tls_verify":   schema.BoolAttribute{Optional: true},
-			"read_digest_auth":       resourceDigestAuthSchema(""),
-			"read_response_codes":    schema.ListAttribute{ElementType: types.StringType, Optional: true},
+			"skip_read":                    schema.BoolAttribute{Optional: true},
+			"read_url":                     schema.StringAttribute{Optional: true},
+			"read_method":                  schema.StringAttribute{Optional: true},
+			"read_headers":                 schema.MapAttribute{ElementType: types.StringType, Optional: true},
+			"read_headers_wo":              writeOnlyHeadersSchema(""),
+			"read_headers_wo_version":      writeOnlyVersionSchema(""),
+			"read_request_body_wo":         writeOnlyBodySchema(""),
+			"read_request_body_wo_version": writeOnlyVersionSchema(""),
+			"read_parameters":              schema.MapAttribute{ElementType: types.StringType, Optional: true},
+			"read_request_body":            schema.StringAttribute{Optional: true},
+			"read_cert_file":               schema.StringAttribute{Optional: true},
+			"read_key_file":                schema.StringAttribute{Optional: true},
+			"read_ca_cert_file":            schema.StringAttribute{Optional: true},
+			"read_ca_cert_directory":       schema.StringAttribute{Optional: true},
+			"read_skip_tls_verify":         schema.BoolAttribute{Optional: true},
+			"read_digest_auth":             resourceDigestAuthSchema(""),
+			"read_response_codes":          schema.ListAttribute{ElementType: types.StringType, Optional: true},
 
 			// Destroy-related fields
-			"skip_destroy":               schema.BoolAttribute{Optional: true},
-			"destroy_url":                schema.StringAttribute{Optional: true},
-			"destroy_method":             schema.StringAttribute{Optional: true},
-			"destroy_headers":            schema.MapAttribute{ElementType: types.StringType, Optional: true},
-			"destroy_request_parameters": schema.MapAttribute{ElementType: types.StringType, Optional: true},
-			"destroy_request_body":       schema.StringAttribute{Optional: true},
-			"destroy_cert_file":          schema.StringAttribute{Optional: true},
-			"destroy_key_file":           schema.StringAttribute{Optional: true},
-			"destroy_ca_cert_file":       schema.StringAttribute{Optional: true},
-			"destroy_ca_cert_directory":  schema.StringAttribute{Optional: true},
-			"destroy_skip_tls_verify":    schema.BoolAttribute{Optional: true},
-			"destroy_digest_auth":        resourceDigestAuthSchema(""),
-			"destroy_response_codes":     schema.ListAttribute{ElementType: types.StringType, Optional: true},
-			"destroy_timeout":            schema.Int64Attribute{Optional: true},
-			"destroy_max_retry":          schema.Int64Attribute{Optional: true},
-			"destroy_retry_interval":     schema.Int64Attribute{Optional: true},
-			"destroy_request_url_string": schema.StringAttribute{Computed: true},
+			"skip_destroy":                    schema.BoolAttribute{Optional: true},
+			"destroy_url":                     schema.StringAttribute{Optional: true},
+			"destroy_method":                  schema.StringAttribute{Optional: true},
+			"destroy_headers":                 schema.MapAttribute{ElementType: types.StringType, Optional: true},
+			"destroy_headers_wo":              writeOnlyHeadersSchema(""),
+			"destroy_headers_wo_version":      writeOnlyVersionSchema(""),
+			"destroy_request_body_wo":         writeOnlyBodySchema(""),
+			"destroy_request_body_wo_version": writeOnlyVersionSchema(""),
+			"destroy_request_parameters":      schema.MapAttribute{ElementType: types.StringType, Optional: true},
+			"destroy_request_body":            schema.StringAttribute{Optional: true},
+			"destroy_cert_file":               schema.StringAttribute{Optional: true},
+			"destroy_key_file":                schema.StringAttribute{Optional: true},
+			"destroy_ca_cert_file":            schema.StringAttribute{Optional: true},
+			"destroy_ca_cert_directory":       schema.StringAttribute{Optional: true},
+			"destroy_skip_tls_verify":         schema.BoolAttribute{Optional: true},
+			"destroy_digest_auth":             resourceDigestAuthSchema(""),
+			"destroy_response_codes":          schema.ListAttribute{ElementType: types.StringType, Optional: true},
+			"destroy_timeout":                 schema.Int64Attribute{Optional: true},
+			"destroy_max_retry":               schema.Int64Attribute{Optional: true},
+			"destroy_retry_interval":          schema.Int64Attribute{Optional: true},
+			"destroy_request_url_string":      schema.StringAttribute{Computed: true},
 		},
 	}
 
@@ -1107,6 +1119,7 @@ func TestCurlResource_StateUpgrade(t *testing.T) {
 	state := tfsdk.State{
 		Schema: schemaVar,
 	}
+	nullWriteOnlyAttributes(oldState)
 	diags := state.Set(ctx, oldState)
 	if diags.HasError() {
 		t.Fatalf("error setting initial state: %v", diags)
@@ -1401,6 +1414,7 @@ func TestCurlResource_Read_ResponseSensitiveToggle(t *testing.T) {
 	}
 
 	state1 := tfsdk.State{Schema: schemaResp.Schema}
+	nullWriteOnlyAttributes(&initialState)
 	diags := state1.Set(ctx, &initialState)
 	if diags.HasError() {
 		t.Fatalf("Failed to set initial state: %v", diags)
@@ -1426,6 +1440,7 @@ func TestCurlResource_Read_ResponseSensitiveToggle(t *testing.T) {
 
 	stateWithToggle := initialState
 	stateWithToggle.DriftMarker = types.StringValue("initial")
+	nullWriteOnlyAttributes(&stateWithToggle)
 
 	state2 := tfsdk.State{Schema: schemaResp.Schema}
 	diags = state2.Set(ctx, &stateWithToggle)
@@ -1481,6 +1496,7 @@ func TestCurlResource_Read_ResponseSensitiveToggle(t *testing.T) {
 	}
 
 	state3 := tfsdk.State{Schema: schemaResp.Schema}
+	nullWriteOnlyAttributes(&stateWithReverseToggle)
 	diags = state3.Set(ctx, &stateWithReverseToggle)
 	if diags.HasError() {
 		t.Fatalf("Failed to set state with reverse toggle: %v", diags)
@@ -1575,6 +1591,7 @@ func TestCurlResource_ModifyPlan_ReadDrift(t *testing.T) {
 	}
 
 	state := tfsdk.State{Schema: schemaResp.Schema}
+	nullWriteOnlyAttributes(&stateModel)
 	if diags := state.Set(ctx, &stateModel); diags.HasError() {
 		t.Fatalf("failed to set state: %v", diags)
 	}
@@ -1646,6 +1663,7 @@ func TestCurlResource_ModifyPlan_BadReadStatusCode(t *testing.T) {
 	}
 
 	state := tfsdk.State{Schema: schemaResp.Schema}
+	nullWriteOnlyAttributes(&stateModel)
 	if diags := state.Set(ctx, &stateModel); diags.HasError() {
 		t.Fatalf("failed to set state: %v", diags)
 	}
@@ -1951,6 +1969,7 @@ func TestCurlResource_Delete_ProviderDefaultHeadersOverridesStaleState(t *testin
 	}
 
 	state := tfsdk.State{Schema: schemaResp.Schema}
+	nullWriteOnlyAttributes(&stateModel)
 	if diags := state.Set(ctx, &stateModel); diags.HasError() {
 		t.Fatalf("failed to set state: %v", diags)
 	}

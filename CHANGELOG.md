@@ -1,3 +1,9 @@
+## 2.8.0
+
+ENHANCEMENTS:
+
+- Add write-only headers and request bodies on `terracurl_request` resources with `_wo_version` companions and private-state snapshots for read/destroy. Requires Terraform 1.11+. Closes #115, #116.
+
 ## 2.7.0
 
 ENHANCEMENTS:

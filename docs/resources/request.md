@@ -25,6 +25,8 @@ When `skip_read` is `false` and `read_url`, `read_method`, and `read_response_co
 
 ### Optional
 
+> **NOTE**: [Write-only arguments](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments) are supported in Terraform 1.11 and later.
+
 - `ca_cert_directory` (String) Path to a directory on local disk that contains one or more certificate files that will be used to validate the certificate presented by the server
 - `ca_cert_file` (String) Path to a file on local disk that will be used to validate the certificate presented by the server
 - `cert_file` (String) Path to a file on local disk that contains the PEM-encoded certificate to present to the server
@@ -33,10 +35,14 @@ When `skip_read` is `false` and `read_url`, `read_method`, and `read_response_co
 - `destroy_cert_file` (String) Path to a file on local disk that contains the PEM-encoded certificate to present to the server for the destroy call
 - `destroy_digest_auth` (Attributes, Sensitive) HTTP Digest authentication credentials for the destroy request. Overrides provider `default_digest_auth` when configured. (see [below for nested schema](#nestedatt--destroy_digest_auth))
 - `destroy_headers` (Map of String) Map of headers to attach to the destroy API call. Host (case-insensitive) overrides the HTTP Host header sent on the wire, independent of the URL hostname.
+- `destroy_headers_wo` (Map of String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only headers for the destroy call. Snapshotted in provider private state for use during destroy.
+- `destroy_headers_wo_version` (Number) Increment to trigger refreshing snapshotted `destroy_headers_wo` values.
 - `destroy_key_file` (String) Path to a file on local disk that contains the PEM-encoded private key for which the authentication certificate was issued for the destroy call
 - `destroy_max_retry` (Number) Maximum number of tries until it is marked as failed for the destroy call
 - `destroy_method` (String) Destroy HTTP method to use in the API call
 - `destroy_request_body` (String) A request body to attach to the destroy API call
+- `destroy_request_body_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only request body for the destroy call. Not stored in Terraform state.
+- `destroy_request_body_wo_version` (Number) Increment to trigger applying an updated `destroy_request_body_wo` value.
 - `destroy_request_parameters` (Map of String) Map of parameters to attach to the destroy API call
 - `destroy_response_codes` (List of String) A list of expected response codes for the destroy call
 - `destroy_retry_interval` (Number) Interval between each attempt for the destroy call
@@ -45,6 +51,8 @@ When `skip_read` is `false` and `read_url`, `read_method`, and `read_response_co
 - `destroy_url` (String) Destroy API endpoint to call
 - `digest_auth` (Attributes, Sensitive) HTTP Digest authentication credentials for the create request. Overrides provider `default_digest_auth` when configured. (see [below for nested schema](#nestedatt--digest_auth))
 - `headers` (Map of String) Map of headers to attach to the API call. Host (case-insensitive) overrides the HTTP Host header sent on the wire, independent of the URL hostname.
+- `headers_wo` (Map of String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only headers for the create call. Not stored in Terraform state. Requires Terraform 1.11 or later.
+- `headers_wo_version` (Number) Increment to trigger applying updated `headers_wo` values.
 - `ignore_response_fields` (List of String) List of JSON fields to ignore during drift detection.
 - `key_file` (String) Path to a file on local disk that contains the PEM-encoded private key for which the authentication certificate was issued
 - `max_retry` (Number) Maximum number of tries until it is marked as failed
@@ -53,14 +61,20 @@ When `skip_read` is `false` and `read_url`, `read_method`, and `read_response_co
 - `read_cert_file` (String) Path to a PEM-encoded certificate for the read request (TLS).
 - `read_digest_auth` (Attributes, Sensitive) HTTP Digest authentication credentials for the read request. Overrides provider `default_digest_auth` when configured. (see [below for nested schema](#nestedatt--read_digest_auth))
 - `read_headers` (Map of String) Map of headers for the read request. Host (case-insensitive) overrides the HTTP Host header sent on the wire, independent of the URL hostname.
+- `read_headers_wo` (Map of String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only headers for the read call. Snapshotted in provider private state for drift detection.
+- `read_headers_wo_version` (Number) Increment to trigger refreshing snapshotted `read_headers_wo` values.
 - `read_key_file` (String) Path to a PEM-encoded private key for the read request (TLS).
 - `read_method` (String) HTTP method for reading resource state. Required if `skip_read` is false.
 - `read_parameters` (Map of String) Optional request parameters to add to the URL
 - `read_request_body` (String) Optional request body to use for the read request.
+- `read_request_body_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only request body for the read call. Snapshotted in provider private state for drift detection.
+- `read_request_body_wo_version` (Number) Increment to trigger refreshing snapshotted `read_request_body_wo` values.
 - `read_response_codes` (List of String) Expected response codes for the read request. Required if `skip_read` is false.
 - `read_skip_tls_verify` (Boolean) Skip TLS verification for the read request.
 - `read_url` (String) API endpoint for reading resource state. Required if `skip_read` is false.
 - `request_body` (String) A request body to attach to the API call
+- `request_body_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only request body for the create call. Not stored in Terraform state. Requires Terraform 1.11 or later.
+- `request_body_wo_version` (Number) Increment to trigger applying an updated `request_body_wo` value.
 - `request_parameters` (Map of String) Map of parameters to attach to the API call
 - `response_sensitive` (Boolean) Set to `true` to treat the response as sensitive. When enabled, the response body is written to `sensitive_response` (a sensitive attribute) and `response` is left empty so that secret values are not displayed in plan output. Defaults to `false` to preserve existing behavior.
 - `retry_interval` (Number) Interval between each attempt
