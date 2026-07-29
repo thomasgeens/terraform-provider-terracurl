@@ -135,7 +135,7 @@ func TestExtractJSONPath_NumericAndBool(t *testing.T) {
 
 func TestResolveDestroyTemplates_NoPlaceholders(t *testing.T) {
 	data := &CurlResourceModel{
-		DestroyUrl: types.StringValue("https://example.com/destroy"),
+		DestroyUrl:         types.StringValue("https://example.com/destroy"),
 		DestroyRequestBody: types.StringValue(`{"static":true}`),
 	}
 
@@ -153,8 +153,8 @@ func TestResolveDestroyTemplates_NoPlaceholders(t *testing.T) {
 
 func TestResolveDestroyTemplates_WithNestedPlaceholder(t *testing.T) {
 	data := &CurlResourceModel{
-		Response:     types.StringValue(`{"data":{"object_id":"nested-456"}}`),
-		DestroyUrl:   types.StringValue("https://example.com/objects/{response.data.object_id}"),
+		Response:           types.StringValue(`{"data":{"object_id":"nested-456"}}`),
+		DestroyUrl:         types.StringValue("https://example.com/objects/{response.data.object_id}"),
 		DestroyRequestBody: types.StringValue(`{"id":"{response.data.object_id}"}`),
 	}
 
