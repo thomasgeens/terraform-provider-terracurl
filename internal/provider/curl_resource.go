@@ -591,7 +591,7 @@ func (r *CurlResource) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 	data.RequestUrlString = types.StringValue(request.URL.String())
 
-	tflog.Debug(ctx, fmt.Sprintf("Resource create API Call: \nURL: %s\nHeaders: %s\nMethod: %s\nRequest Body: %s\n", request.URL.String(), request.Header, request.Method, requestBodyForLog(data.RequestBody, data.RequestBodyWo, usedWriteOnlyBody)))
+	tflog.Debug(ctx, fmt.Sprintf("Resource create API Call: \nURL: %s\nHeaders: %s\nMethod: %s\nRequest Body: %s\n", request.URL.String(), request.Header, request.Method, requestBodyForLog(data.RequestBody, usedWriteOnlyBody)))
 	timeout := 10 * time.Second
 	if !data.Timeout.IsNull() {
 		timeout = time.Duration(data.Timeout.ValueInt64()) * time.Second
@@ -726,7 +726,7 @@ func (r *CurlResource) executeReadRequest(ctx context.Context, data CurlResource
 		request.URL.RawQuery = params.Encode()
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Resource read API Call: \nURL: %s\nHeaders: %s\nMethod: %s\nRequest Body: %s\n", request.URL.String(), request.Header, request.Method, requestBodyForLog(data.ReadRequestBody, data.ReadRequestBodyWo, usedWriteOnlyBody)))
+	tflog.Debug(ctx, fmt.Sprintf("Resource read API Call: \nURL: %s\nHeaders: %s\nMethod: %s\nRequest Body: %s\n", request.URL.String(), request.Header, request.Method, requestBodyForLog(data.ReadRequestBody, usedWriteOnlyBody)))
 
 	httpResp, err := client.Do(request)
 	if err != nil {
@@ -990,7 +990,7 @@ func (r *CurlResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 	retryInterval := time.Duration(data.DestroyRetryInterval.ValueInt64()) * time.Second
 	maxRetry := int(data.DestroyMaxRetry.ValueInt64())
 
-	tflog.Debug(ctx, fmt.Sprintf("Resource destroy API Call: \nURL: %s\nHeaders: %s\nMethod: %s\nRequest Body: %s\n", request.URL.String(), request.Header, request.Method, requestBodyForLog(data.DestroyRequestBody, data.DestroyRequestBodyWo, usedWriteOnlyBody)))
+	tflog.Debug(ctx, fmt.Sprintf("Resource destroy API Call: \nURL: %s\nHeaders: %s\nMethod: %s\nRequest Body: %s\n", request.URL.String(), request.Header, request.Method, requestBodyForLog(data.DestroyRequestBody, usedWriteOnlyBody)))
 
 	var bodyBytes []byte
 	var statusCode int

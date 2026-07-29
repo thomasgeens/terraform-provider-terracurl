@@ -85,7 +85,7 @@ func applyRequestHeadersWithWriteOnly(req *http.Request, headers, headersWo type
 	applyRequestHeaders(req, headersWo)
 }
 
-func requestBodyForLog(regular, writeOnly types.String, usedWriteOnly bool) string {
+func requestBodyForLog(regular types.String, usedWriteOnly bool) string {
 	if usedWriteOnly {
 		return "<redacted write-only request body>"
 	}
@@ -195,24 +195,6 @@ func writeOnlyVersionsChanged(state, config CurlResourceModel) bool {
 		state.ReadRequestBodyWoVersion.ValueInt64() != config.ReadRequestBodyWoVersion.ValueInt64() ||
 		state.DestroyHeadersWoVersion.ValueInt64() != config.DestroyHeadersWoVersion.ValueInt64() ||
 		state.DestroyRequestBodyWoVersion.ValueInt64() != config.DestroyRequestBodyWoVersion.ValueInt64()
-}
-
-func applyWriteOnlySnapshot(snapshot writeOnlyPrivateSnapshot, data *CurlResourceModel) {
-	if data == nil {
-		return
-	}
-	data.HeadersWo = stringMapToTypesMap(snapshot.HeadersCreate)
-	data.ReadHeadersWo = stringMapToTypesMap(snapshot.HeadersRead)
-	data.DestroyHeadersWo = stringMapToTypesMap(snapshot.HeadersDestroy)
-	if snapshot.BodyCreate != "" {
-		data.RequestBodyWo = types.StringValue(snapshot.BodyCreate)
-	}
-	if snapshot.BodyRead != "" {
-		data.ReadRequestBodyWo = types.StringValue(snapshot.BodyRead)
-	}
-	if snapshot.BodyDestroy != "" {
-		data.DestroyRequestBodyWo = types.StringValue(snapshot.BodyDestroy)
-	}
 }
 
 func nullWriteOnlyAttributes(data *CurlResourceModel) {

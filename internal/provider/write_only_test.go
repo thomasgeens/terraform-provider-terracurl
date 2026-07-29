@@ -108,7 +108,8 @@ func TestWriteOnlyPrivateSnapshotRoundtrip(t *testing.T) {
 		t.Fatalf("load failed: %v", diags)
 	}
 
-	if loaded.DestroyHeadersWo.Elements()["Authorization"].(types.String).ValueString() != "Bearer destroy" {
+	auth, ok := loaded.DestroyHeadersWo.Elements()["Authorization"].(types.String)
+	if !ok || auth.ValueString() != "Bearer destroy" {
 		t.Fatalf("unexpected destroy headers %#v", loaded.DestroyHeadersWo)
 	}
 	if loaded.ReadRequestBodyWo.ValueString() != `{"read":true}` {
@@ -149,7 +150,7 @@ func TestWriteOnlyVersionsChanged(t *testing.T) {
 }
 
 func TestRequestBodyForLogRedactsWriteOnly(t *testing.T) {
-	got := requestBodyForLog(types.StringNull(), types.StringValue("secret"), true)
+	got := requestBodyForLog(types.StringNull(), true)
 	if got != "<redacted write-only request body>" {
 		t.Fatalf("unexpected log value %q", got)
 	}
