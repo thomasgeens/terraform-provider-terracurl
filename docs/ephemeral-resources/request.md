@@ -36,6 +36,8 @@ TerraCurl request ephemeral resource
 - `close_max_retry` (Number) Maximum number of tries until it is marked as failed
 - `close_method` (String) HTTP method to use in the API call
 - `close_request_body` (String) A request body to attach to the API call
+- `close_request_body_file` (String) Path to a file on local disk to use as the request body. File bytes are read at request time and are not stored in Terraform state.
+- `close_request_multipart` (Attributes) Multipart form request body. The provider sets `Content-Type` with a generated boundary. (see [below for nested schema](#nestedatt--close_request_multipart))
 - `close_request_parameters` (Map of String) Map of parameters to attach to the API call
 - `close_response_codes` (List of String) A list of expected response codes
 - `close_retry_interval` (Number) Interval between each attempt
@@ -56,6 +58,8 @@ TerraCurl request ephemeral resource
 - `renew_max_retry` (Number) Maximum number of tries until it is marked as failed
 - `renew_method` (String) HTTP method to use in the API call
 - `renew_request_body` (String) A request body to attach to the API call
+- `renew_request_body_file` (String) Path to a file on local disk to use as the request body. File bytes are read at request time and are not stored in Terraform state.
+- `renew_request_multipart` (Attributes) Multipart form request body. The provider sets `Content-Type` with a generated boundary. (see [below for nested schema](#nestedatt--renew_request_multipart))
 - `renew_request_parameters` (Map of String) Map of parameters to attach to the API call
 - `renew_response_codes` (List of String) A list of expected response codes
 - `renew_retry_interval` (Number) Interval between each attempt
@@ -63,6 +67,8 @@ TerraCurl request ephemeral resource
 - `renew_timeout` (Number) Time in seconds before each request times out. Defaults to 10
 - `renew_url` (String) Api endpoint to call
 - `request_body` (String) A request body to attach to the API call
+- `request_body_file` (String) Path to a file on local disk to use as the request body. File bytes are read at request time and are not stored in Terraform state.
+- `request_multipart` (Attributes) Multipart form request body. The provider sets `Content-Type` with a generated boundary. (see [below for nested schema](#nestedatt--request_multipart))
 - `request_parameters` (Map of String) Map of parameters to attach to the API call
 - `response_sensitive` (Boolean) Set to `true` to treat response bodies as sensitive. When enabled, response bodies are written to the corresponding `sensitive_*` attributes and the non-sensitive attributes are left empty so secret values are not displayed in plan output. Defaults to `false` to preserve existing behavior.
 - `retry_interval` (Number) Interval between each attempt
@@ -94,6 +100,28 @@ Required:
 - `username` (String, Sensitive) Username for HTTP Digest authentication.
 
 
+<a id="nestedatt--close_request_multipart"></a>
+### Nested Schema for `close_request_multipart`
+
+Required:
+
+- `parts` (Attributes List) Multipart form parts. (see [below for nested schema](#nestedatt--close_request_multipart--parts))
+
+<a id="nestedatt--close_request_multipart--parts"></a>
+### Nested Schema for `close_request_multipart.parts`
+
+Required:
+
+- `name` (String) Form field name.
+
+Optional:
+
+- `content_type` (String) Optional Content-Type for this part. Defaults to `text/plain` for value parts and `application/octet-stream` for file parts.
+- `file_path` (String) Path to a file on local disk for this form field.
+- `value` (String) Text form field value.
+
+
+
 <a id="nestedatt--digest_auth"></a>
 ### Nested Schema for `digest_auth`
 
@@ -110,3 +138,46 @@ Required:
 
 - `password` (String, Sensitive) Password for HTTP Digest authentication.
 - `username` (String, Sensitive) Username for HTTP Digest authentication.
+
+
+<a id="nestedatt--renew_request_multipart"></a>
+### Nested Schema for `renew_request_multipart`
+
+Required:
+
+- `parts` (Attributes List) Multipart form parts. (see [below for nested schema](#nestedatt--renew_request_multipart--parts))
+
+<a id="nestedatt--renew_request_multipart--parts"></a>
+### Nested Schema for `renew_request_multipart.parts`
+
+Required:
+
+- `name` (String) Form field name.
+
+Optional:
+
+- `content_type` (String) Optional Content-Type for this part. Defaults to `text/plain` for value parts and `application/octet-stream` for file parts.
+- `file_path` (String) Path to a file on local disk for this form field.
+- `value` (String) Text form field value.
+
+
+
+<a id="nestedatt--request_multipart"></a>
+### Nested Schema for `request_multipart`
+
+Required:
+
+- `parts` (Attributes List) Multipart form parts. (see [below for nested schema](#nestedatt--request_multipart--parts))
+
+<a id="nestedatt--request_multipart--parts"></a>
+### Nested Schema for `request_multipart.parts`
+
+Required:
+
+- `name` (String) Form field name.
+
+Optional:
+
+- `content_type` (String) Optional Content-Type for this part. Defaults to `text/plain` for value parts and `application/octet-stream` for file parts.
+- `file_path` (String) Path to a file on local disk for this form field.
+- `value` (String) Text form field value.

@@ -43,70 +43,76 @@ func NewCurlEphemeralResource() ephemeral.EphemeralResource {
 }
 
 type CurlEphemeralModel struct {
-	Id                types.String     `tfsdk:"id"`
-	Name              types.String     `tfsdk:"name"`
-	Url               types.String     `tfsdk:"url"`
-	Method            types.String     `tfsdk:"method"`
-	RequestBody       types.String     `tfsdk:"request_body"`
-	Headers           types.Map        `tfsdk:"headers"`
-	DigestAuth        *DigestAuthModel `tfsdk:"digest_auth"`
-	RequestParameters types.Map        `tfsdk:"request_parameters"`
-	RequestUrlString  types.String     `tfsdk:"request_url_string"`
-	CertFile          types.String     `tfsdk:"cert_file"`
-	KeyFile           types.String     `tfsdk:"key_file"`
-	CaCertFile        types.String     `tfsdk:"ca_cert_file"`
-	CaCertDirectory   types.String     `tfsdk:"ca_cert_directory"`
-	SkipTlsVerify     types.Bool       `tfsdk:"skip_tls_verify"`
-	RetryInterval     types.Int64      `tfsdk:"retry_interval"`
-	MaxRetry          types.Int64      `tfsdk:"max_retry"`
-	Timeout           types.Int64      `tfsdk:"timeout"`
-	Response          types.String     `tfsdk:"response"`
-	SensitiveResponse types.String     `tfsdk:"sensitive_response"`
-	ResponseSensitive types.Bool       `tfsdk:"response_sensitive"`
-	ResponseCodes     types.List       `tfsdk:"response_codes"`
-	StatusCode        types.String     `tfsdk:"status_code"`
-	SkipRenew         types.Bool       `tfsdk:"skip_renew"`
+	Id                types.String          `tfsdk:"id"`
+	Name              types.String          `tfsdk:"name"`
+	Url               types.String          `tfsdk:"url"`
+	Method            types.String          `tfsdk:"method"`
+	RequestBody       types.String          `tfsdk:"request_body"`
+	RequestBodyFile   types.String          `tfsdk:"request_body_file"`
+	RequestMultipart  *MultipartConfigModel `tfsdk:"request_multipart"`
+	Headers           types.Map             `tfsdk:"headers"`
+	DigestAuth        *DigestAuthModel      `tfsdk:"digest_auth"`
+	RequestParameters types.Map             `tfsdk:"request_parameters"`
+	RequestUrlString  types.String          `tfsdk:"request_url_string"`
+	CertFile          types.String          `tfsdk:"cert_file"`
+	KeyFile           types.String          `tfsdk:"key_file"`
+	CaCertFile        types.String          `tfsdk:"ca_cert_file"`
+	CaCertDirectory   types.String          `tfsdk:"ca_cert_directory"`
+	SkipTlsVerify     types.Bool            `tfsdk:"skip_tls_verify"`
+	RetryInterval     types.Int64           `tfsdk:"retry_interval"`
+	MaxRetry          types.Int64           `tfsdk:"max_retry"`
+	Timeout           types.Int64           `tfsdk:"timeout"`
+	Response          types.String          `tfsdk:"response"`
+	SensitiveResponse types.String          `tfsdk:"sensitive_response"`
+	ResponseSensitive types.Bool            `tfsdk:"response_sensitive"`
+	ResponseCodes     types.List            `tfsdk:"response_codes"`
+	StatusCode        types.String          `tfsdk:"status_code"`
+	SkipRenew         types.Bool            `tfsdk:"skip_renew"`
 
-	RenewInterval          types.Int64      `tfsdk:"renew_interval"`
-	RenewUrl               types.String     `tfsdk:"renew_url"`
-	RenewMethod            types.String     `tfsdk:"renew_method"`
-	RenewRequestBody       types.String     `tfsdk:"renew_request_body"`
-	RenewHeaders           types.Map        `tfsdk:"renew_headers"`
-	RenewDigestAuth        *DigestAuthModel `tfsdk:"renew_digest_auth"`
-	RenewRequestParameters types.Map        `tfsdk:"renew_request_parameters"`
-	RenewRequestUrlString  types.String     `tfsdk:"renew_request_url_string"`
-	RenewCertFile          types.String     `tfsdk:"renew_cert_file"`
-	RenewKeyFile           types.String     `tfsdk:"renew_key_file"`
-	RenewCaCertFile        types.String     `tfsdk:"renew_ca_cert_file"`
-	RenewCaCertDirectory   types.String     `tfsdk:"renew_ca_cert_directory"`
-	RenewSkipTlsVerify     types.Bool       `tfsdk:"renew_skip_tls_verify"`
-	RenewRetryInterval     types.Int64      `tfsdk:"renew_retry_interval"`
-	RenewMaxRetry          types.Int64      `tfsdk:"renew_max_retry"`
-	RenewTimeout           types.Int64      `tfsdk:"renew_timeout"`
-	RenewResponse          types.String     `tfsdk:"renew_response"`
-	SensitiveRenewResponse types.String     `tfsdk:"sensitive_renew_response"`
-	RenewResponseCodes     types.List       `tfsdk:"renew_response_codes"`
+	RenewInterval          types.Int64           `tfsdk:"renew_interval"`
+	RenewUrl               types.String          `tfsdk:"renew_url"`
+	RenewMethod            types.String          `tfsdk:"renew_method"`
+	RenewRequestBody       types.String          `tfsdk:"renew_request_body"`
+	RenewRequestBodyFile   types.String          `tfsdk:"renew_request_body_file"`
+	RenewRequestMultipart  *MultipartConfigModel `tfsdk:"renew_request_multipart"`
+	RenewHeaders           types.Map             `tfsdk:"renew_headers"`
+	RenewDigestAuth        *DigestAuthModel      `tfsdk:"renew_digest_auth"`
+	RenewRequestParameters types.Map             `tfsdk:"renew_request_parameters"`
+	RenewRequestUrlString  types.String          `tfsdk:"renew_request_url_string"`
+	RenewCertFile          types.String          `tfsdk:"renew_cert_file"`
+	RenewKeyFile           types.String          `tfsdk:"renew_key_file"`
+	RenewCaCertFile        types.String          `tfsdk:"renew_ca_cert_file"`
+	RenewCaCertDirectory   types.String          `tfsdk:"renew_ca_cert_directory"`
+	RenewSkipTlsVerify     types.Bool            `tfsdk:"renew_skip_tls_verify"`
+	RenewRetryInterval     types.Int64           `tfsdk:"renew_retry_interval"`
+	RenewMaxRetry          types.Int64           `tfsdk:"renew_max_retry"`
+	RenewTimeout           types.Int64           `tfsdk:"renew_timeout"`
+	RenewResponse          types.String          `tfsdk:"renew_response"`
+	SensitiveRenewResponse types.String          `tfsdk:"sensitive_renew_response"`
+	RenewResponseCodes     types.List            `tfsdk:"renew_response_codes"`
 
 	SkipClose types.Bool `tfsdk:"skip_close"`
 
-	CloseUrl               types.String     `tfsdk:"close_url"`
-	CloseMethod            types.String     `tfsdk:"close_method"`
-	CloseRequestBody       types.String     `tfsdk:"close_request_body"`
-	CloseHeaders           types.Map        `tfsdk:"close_headers"`
-	CloseDigestAuth        *DigestAuthModel `tfsdk:"close_digest_auth"`
-	CloseRequestParameters types.Map        `tfsdk:"close_request_parameters"`
-	CloseRequestUrlString  types.String     `tfsdk:"close_request_url_string"`
-	CloseCertFile          types.String     `tfsdk:"close_cert_file"`
-	CloseKeyFile           types.String     `tfsdk:"close_key_file"`
-	CloseCaCertFile        types.String     `tfsdk:"close_ca_cert_file"`
-	CloseCaCertDirectory   types.String     `tfsdk:"close_ca_cert_directory"`
-	CloseSkipTlsVerify     types.Bool       `tfsdk:"close_skip_tls_verify"`
-	CloseRetryInterval     types.Int64      `tfsdk:"close_retry_interval"`
-	CloseMaxRetry          types.Int64      `tfsdk:"close_max_retry"`
-	CloseTimeout           types.Int64      `tfsdk:"close_timeout"`
-	CloseResponse          types.String     `tfsdk:"close_response"`
-	SensitiveCloseResponse types.String     `tfsdk:"sensitive_close_response"`
-	CloseResponseCodes     types.List       `tfsdk:"close_response_codes"`
+	CloseUrl               types.String          `tfsdk:"close_url"`
+	CloseMethod            types.String          `tfsdk:"close_method"`
+	CloseRequestBody       types.String          `tfsdk:"close_request_body"`
+	CloseRequestBodyFile   types.String          `tfsdk:"close_request_body_file"`
+	CloseRequestMultipart  *MultipartConfigModel `tfsdk:"close_request_multipart"`
+	CloseHeaders           types.Map             `tfsdk:"close_headers"`
+	CloseDigestAuth        *DigestAuthModel      `tfsdk:"close_digest_auth"`
+	CloseRequestParameters types.Map             `tfsdk:"close_request_parameters"`
+	CloseRequestUrlString  types.String          `tfsdk:"close_request_url_string"`
+	CloseCertFile          types.String          `tfsdk:"close_cert_file"`
+	CloseKeyFile           types.String          `tfsdk:"close_key_file"`
+	CloseCaCertFile        types.String          `tfsdk:"close_ca_cert_file"`
+	CloseCaCertDirectory   types.String          `tfsdk:"close_ca_cert_directory"`
+	CloseSkipTlsVerify     types.Bool            `tfsdk:"close_skip_tls_verify"`
+	CloseRetryInterval     types.Int64           `tfsdk:"close_retry_interval"`
+	CloseMaxRetry          types.Int64           `tfsdk:"close_max_retry"`
+	CloseTimeout           types.Int64           `tfsdk:"close_timeout"`
+	CloseResponse          types.String          `tfsdk:"close_response"`
+	SensitiveCloseResponse types.String          `tfsdk:"sensitive_close_response"`
+	CloseResponseCodes     types.List            `tfsdk:"close_response_codes"`
 }
 
 func (e *EphemeralCurlResource) Schema(ctx context.Context, req ephemeral.SchemaRequest, resp *ephemeral.SchemaResponse) {
@@ -135,6 +141,11 @@ func (e *EphemeralCurlResource) Schema(ctx context.Context, req ephemeral.Schema
 				Optional:            true,
 				MarkdownDescription: "A request body to attach to the API call",
 			},
+			"request_body_file": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: requestBodyFileDescription,
+			},
+			"request_multipart": ephemeralMultipartSchema(requestMultipartDescription),
 			"headers": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
@@ -229,6 +240,11 @@ func (e *EphemeralCurlResource) Schema(ctx context.Context, req ephemeral.Schema
 				Optional:            true,
 				MarkdownDescription: "A request body to attach to the API call",
 			},
+			"renew_request_body_file": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: requestBodyFileDescription,
+			},
+			"renew_request_multipart": ephemeralMultipartSchema(requestMultipartDescription),
 			"renew_headers": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
@@ -309,6 +325,11 @@ func (e *EphemeralCurlResource) Schema(ctx context.Context, req ephemeral.Schema
 				Optional:            true,
 				MarkdownDescription: "A request body to attach to the API call",
 			},
+			"close_request_body_file": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: requestBodyFileDescription,
+			},
+			"close_request_multipart": ephemeralMultipartSchema(requestMultipartDescription),
 			"close_headers": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
@@ -451,8 +472,17 @@ func (e *EphemeralCurlResource) Open(ctx context.Context, req ephemeral.OpenRequ
 		return
 	}
 
-	reqBody := []byte(data.RequestBody.ValueString())
-	request, err := http.NewRequest(data.Method.ValueString(), data.Url.ValueString(), bytes.NewBuffer(reqBody))
+	openPayload, payloadDiags := resolveRequestPayload(data.RequestBody, types.StringNull(), data.RequestBodyFile, data.RequestMultipart)
+	resp.Diagnostics.Append(payloadDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var openBodyReader io.Reader
+	if len(openPayload.Body) > 0 {
+		openBodyReader = bytes.NewBuffer(openPayload.Body)
+	}
+	request, err := http.NewRequest(data.Method.ValueString(), data.Url.ValueString(), openBodyReader)
 	if err != nil {
 		resp.Diagnostics.AddError("HTTP Request Creation Failed", err.Error())
 		return
@@ -460,6 +490,7 @@ func (e *EphemeralCurlResource) Open(ctx context.Context, req ephemeral.OpenRequ
 
 	// Add headers.
 	applyRequestHeadersWithDefaults(request, data.Headers, e.providerMeta())
+	applyResolvedPayloadToRequest(request, openPayload)
 
 	// Add query parameters.
 	if !data.RequestParameters.IsNull() && !data.RequestParameters.IsUnknown() {
@@ -539,6 +570,17 @@ func (e *EphemeralCurlResource) Open(ctx context.Context, req ephemeral.OpenRequ
 		tflog.Debug(ctx, fmt.Sprintf("Setting RenewAt to: %s (in %d seconds)", resp.RenewAt, renewDuration/time.Second))
 	}
 
+	renewMultipartJSON, err := multipartConfigToPrivateString(data.RenewRequestMultipart)
+	if err != nil {
+		resp.Diagnostics.AddError("Multipart Configuration Error", err.Error())
+		return
+	}
+	closeMultipartJSON, err := multipartConfigToPrivateString(data.CloseRequestMultipart)
+	if err != nil {
+		resp.Diagnostics.AddError("Multipart Configuration Error", err.Error())
+		return
+	}
+
 	privateData := map[string]interface{}{
 		"Id":                data.Id.ValueString(),
 		"Name":              data.Name.ValueString(),
@@ -569,6 +611,8 @@ func (e *EphemeralCurlResource) Open(ctx context.Context, req ephemeral.OpenRequ
 		"RenewDigestAuth":        digestAuthToPrivateMap(data.RenewDigestAuth),
 		"RenewRequestParameters": convertMap(data.RenewRequestParameters),
 		"RenewRequestBody":       data.RenewRequestBody.ValueString(),
+		"RenewRequestBodyFile":   data.RenewRequestBodyFile.ValueString(),
+		"RenewRequestMultipart":  renewMultipartJSON,
 		"RenewRequestUrlString":  data.RenewRequestUrlString.ValueString(),
 		"RenewCertFile":          data.RenewCertFile.ValueString(),
 		"RenewKeyFile":           data.RenewKeyFile.ValueString(),
@@ -589,6 +633,8 @@ func (e *EphemeralCurlResource) Open(ctx context.Context, req ephemeral.OpenRequ
 		"CloseDigestAuth":        digestAuthToPrivateMap(data.CloseDigestAuth),
 		"CloseRequestParameters": convertMap(data.CloseRequestParameters),
 		"CloseRequestBody":       data.CloseRequestBody.ValueString(),
+		"CloseRequestBodyFile":   data.CloseRequestBodyFile.ValueString(),
+		"CloseRequestMultipart":  closeMultipartJSON,
 		"CloseRequestUrlString":  data.CloseRequestUrlString.ValueString(),
 		"CloseCertFile":          data.CloseCertFile.ValueString(),
 		"CloseKeyFile":           data.CloseKeyFile.ValueString(),
@@ -710,6 +756,14 @@ func (e *EphemeralCurlResource) Renew(ctx context.Context, req ephemeral.RenewRe
 	renewRequestBody, ok := privateMap["RenewRequestBody"].(string)
 	if !ok {
 		resp.Diagnostics.AddError("Type Assertion Error", "RenewRequestBody is not a string")
+		return
+	}
+
+	renewRequestBodyFile, _ := privateMap["RenewRequestBodyFile"].(string)
+	renewRequestMultipartRaw, _ := privateMap["RenewRequestMultipart"].(string)
+	renewRequestMultipart, err := multipartConfigFromPrivateString(renewRequestMultipartRaw)
+	if err != nil {
+		resp.Diagnostics.AddError("Multipart Configuration Error", err.Error())
 		return
 	}
 
@@ -889,6 +943,14 @@ func (e *EphemeralCurlResource) Renew(ctx context.Context, req ephemeral.RenewRe
 		return
 	}
 
+	closeRequestBodyFile, _ := privateMap["CloseRequestBodyFile"].(string)
+	closeRequestMultipartRaw, _ := privateMap["CloseRequestMultipart"].(string)
+	closeRequestMultipart, err := multipartConfigFromPrivateString(closeRequestMultipartRaw)
+	if err != nil {
+		resp.Diagnostics.AddError("Multipart Configuration Error", err.Error())
+		return
+	}
+
 	closeHeaders := make(map[string]string)
 	if rawCloseHeaders, exists := privateMap["CloseHeaders"]; exists && rawCloseHeaders != nil {
 		if rawHeaders, ok := rawCloseHeaders.(map[string]interface{}); ok {
@@ -1016,6 +1078,8 @@ func (e *EphemeralCurlResource) Renew(ctx context.Context, req ephemeral.RenewRe
 		RenewHeaders:           renewHeadersTF,
 		RenewRequestParameters: renewParametersTF,
 		RenewRequestBody:       types.StringValue(renewRequestBody),
+		RenewRequestBodyFile:   types.StringValue(renewRequestBodyFile),
+		RenewRequestMultipart:  renewRequestMultipart,
 		RenewRequestUrlString:  types.StringValue(renewRequestUrlString),
 		RenewCertFile:          types.StringValue(renewCertFile),
 		RenewKeyFile:           types.StringValue(renewKeyFile),
@@ -1034,6 +1098,8 @@ func (e *EphemeralCurlResource) Renew(ctx context.Context, req ephemeral.RenewRe
 		CloseHeaders:           closeHeadersTF,
 		CloseRequestParameters: closeParametersTF,
 		CloseRequestBody:       types.StringValue(closeRequestBody),
+		CloseRequestBodyFile:   types.StringValue(closeRequestBodyFile),
+		CloseRequestMultipart:  closeRequestMultipart,
 		CloseRequestUrlString:  types.StringValue(closeRequestUrlString),
 		CloseCertFile:          types.StringValue(closeCertFile),
 		CloseKeyFile:           types.StringValue(closeKeyFile),
@@ -1104,8 +1170,22 @@ func (e *EphemeralCurlResource) Renew(ctx context.Context, req ephemeral.RenewRe
 		return
 	}
 
-	reqBody := []byte(privateData.RenewRequestBody.ValueString())
-	request, err := http.NewRequest(privateData.RenewMethod.ValueString(), privateData.RenewUrl.ValueString(), bytes.NewBuffer(reqBody))
+	renewPayload, payloadDiags := resolveRequestPayload(
+		privateData.RenewRequestBody,
+		types.StringNull(),
+		privateData.RenewRequestBodyFile,
+		privateData.RenewRequestMultipart,
+	)
+	resp.Diagnostics.Append(payloadDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var renewBodyReader io.Reader
+	if len(renewPayload.Body) > 0 {
+		renewBodyReader = bytes.NewBuffer(renewPayload.Body)
+	}
+	request, err := http.NewRequest(privateData.RenewMethod.ValueString(), privateData.RenewUrl.ValueString(), renewBodyReader)
 	if err != nil {
 		resp.Diagnostics.AddError("HTTP Request Creation Failed", err.Error())
 		return
@@ -1113,6 +1193,7 @@ func (e *EphemeralCurlResource) Renew(ctx context.Context, req ephemeral.RenewRe
 
 	// Add headers
 	applyRequestHeadersWithDefaults(request, privateData.RenewHeaders, e.providerMeta())
+	applyResolvedPayloadToRequest(request, renewPayload)
 
 	tflog.Debug(ctx, fmt.Sprintf("Parameters: %v\n", privateData.RenewRequestParameters.Elements()))
 
@@ -1272,6 +1353,14 @@ func (e *EphemeralCurlResource) Close(ctx context.Context, req ephemeral.CloseRe
 		return
 	}
 
+	closeRequestBodyFile, _ := privateMap["CloseRequestBodyFile"].(string)
+	closeRequestMultipartRaw, _ := privateMap["CloseRequestMultipart"].(string)
+	closeRequestMultipart, err := multipartConfigFromPrivateString(closeRequestMultipartRaw)
+	if err != nil {
+		resp.Diagnostics.AddError("Multipart Configuration Error", err.Error())
+		return
+	}
+
 	closeHeaders := make(map[string]string) // Default to empty map
 	if rawCloseHeaders, exists := privateMap["CloseHeaders"]; exists && rawCloseHeaders != nil {
 		if rawHeaders, ok := rawCloseHeaders.(map[string]interface{}); ok {
@@ -1398,6 +1487,8 @@ func (e *EphemeralCurlResource) Close(ctx context.Context, req ephemeral.CloseRe
 		CloseHeaders:           closeHeadersTF,
 		CloseRequestParameters: closeParametersTF,
 		CloseRequestBody:       types.StringValue(closeRequestBody),
+		CloseRequestBodyFile:   types.StringValue(closeRequestBodyFile),
+		CloseRequestMultipart:  closeRequestMultipart,
 		CloseRequestUrlString:  types.StringValue(closeRequestUrlString),
 		CloseCertFile:          types.StringValue(closeCertFile),
 		CloseKeyFile:           types.StringValue(closeKeyFile),
@@ -1451,14 +1542,24 @@ func (e *EphemeralCurlResource) Close(ctx context.Context, req ephemeral.CloseRe
 		return
 	}
 
-	// Build Close Request
-	var reqBody io.Reader = nil
-	if !privateData.CloseRequestBody.IsNull() && !privateData.CloseRequestBody.IsUnknown() {
-		reqBody = bytes.NewBuffer([]byte(privateData.CloseRequestBody.ValueString()))
+	closePayload, payloadDiags := resolveRequestPayload(
+		privateData.CloseRequestBody,
+		types.StringNull(),
+		privateData.CloseRequestBodyFile,
+		privateData.CloseRequestMultipart,
+	)
+	resp.Diagnostics.Append(payloadDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var closeBodyReader io.Reader
+	if len(closePayload.Body) > 0 {
+		closeBodyReader = bytes.NewBuffer(closePayload.Body)
 	}
 	tflog.Debug(ctx, fmt.Sprintf("Method: %s \n Url: %s \n", privateData.CloseMethod.ValueString(), privateData.CloseUrl.ValueString()))
 
-	request, err := http.NewRequest(privateData.CloseMethod.ValueString(), privateData.CloseUrl.ValueString(), reqBody)
+	request, err := http.NewRequest(privateData.CloseMethod.ValueString(), privateData.CloseUrl.ValueString(), closeBodyReader)
 	if err != nil {
 		resp.Diagnostics.AddError("Close Error", fmt.Sprintf("Failed to create request: %s", err))
 		return
@@ -1469,6 +1570,7 @@ func (e *EphemeralCurlResource) Close(ctx context.Context, req ephemeral.CloseRe
 	} else {
 		applyRequestHeadersWithDefaults(request, privateData.CloseHeaders, e.providerMeta())
 	}
+	applyResolvedPayloadToRequest(request, closePayload)
 
 	// Add Query Parameters
 	if !privateData.CloseRequestParameters.IsNull() && !privateData.CloseRequestParameters.IsUnknown() {
@@ -1547,7 +1649,7 @@ func (e *EphemeralCurlResource) Close(ctx context.Context, req ephemeral.CloseRe
 }
 
 func (e EphemeralCurlResource) ConfigValidators(ctx context.Context) []ephemeral.ConfigValidator {
-	return []ephemeral.ConfigValidator{
+	validators := []ephemeral.ConfigValidator{
 		ephemeralvalidator.RequiredTogether(
 			path.MatchRoot("cert_file"),
 			path.MatchRoot("key_file"),
@@ -1595,4 +1697,8 @@ func (e EphemeralCurlResource) ConfigValidators(ctx context.Context) []ephemeral
 			path.MatchRoot("close_max_retry"),
 		),
 	}
+	validators = append(validators, ephemeralBodyValidators("request_body", "request_body_file", "request_multipart")...)
+	validators = append(validators, ephemeralBodyValidators("renew_request_body", "renew_request_body_file", "renew_request_multipart")...)
+	validators = append(validators, ephemeralBodyValidators("close_request_body", "close_request_body_file", "close_request_multipart")...)
+	return validators
 }

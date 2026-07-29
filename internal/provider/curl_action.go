@@ -28,21 +28,23 @@ func NewCurlAction() action.Action {
 }
 
 type CurlActionModel struct {
-	URL               types.String     `tfsdk:"url"`
-	Method            types.String     `tfsdk:"method"`
-	RequestBody       types.String     `tfsdk:"request_body"`
-	Headers           types.Map        `tfsdk:"headers"`
-	DigestAuth        *DigestAuthModel `tfsdk:"digest_auth"`
-	RequestParameters types.Map        `tfsdk:"request_parameters"`
-	CertFile          types.String     `tfsdk:"cert_file"`
-	KeyFile           types.String     `tfsdk:"key_file"`
-	CaCertFile        types.String     `tfsdk:"ca_cert_file"`
-	CaCertDirectory   types.String     `tfsdk:"ca_cert_directory"`
-	SkipTlsVerify     types.Bool       `tfsdk:"skip_tls_verify"`
-	RetryInterval     types.Int64      `tfsdk:"retry_interval"`
-	MaxRetry          types.Int64      `tfsdk:"max_retry"`
-	Timeout           types.Int64      `tfsdk:"timeout"`
-	ResponseCodes     types.List       `tfsdk:"response_codes"`
+	URL               types.String          `tfsdk:"url"`
+	Method            types.String          `tfsdk:"method"`
+	RequestBody       types.String          `tfsdk:"request_body"`
+	RequestBodyFile   types.String          `tfsdk:"request_body_file"`
+	RequestMultipart  *MultipartConfigModel `tfsdk:"request_multipart"`
+	Headers           types.Map             `tfsdk:"headers"`
+	DigestAuth        *DigestAuthModel      `tfsdk:"digest_auth"`
+	RequestParameters types.Map             `tfsdk:"request_parameters"`
+	CertFile          types.String          `tfsdk:"cert_file"`
+	KeyFile           types.String          `tfsdk:"key_file"`
+	CaCertFile        types.String          `tfsdk:"ca_cert_file"`
+	CaCertDirectory   types.String          `tfsdk:"ca_cert_directory"`
+	SkipTlsVerify     types.Bool            `tfsdk:"skip_tls_verify"`
+	RetryInterval     types.Int64           `tfsdk:"retry_interval"`
+	MaxRetry          types.Int64           `tfsdk:"max_retry"`
+	Timeout           types.Int64           `tfsdk:"timeout"`
+	ResponseCodes     types.List            `tfsdk:"response_codes"`
 }
 
 func (c *CurlAction) Metadata(_ context.Context, req action.MetadataRequest, resp *action.MetadataResponse) {
@@ -65,6 +67,11 @@ func (c *CurlAction) Schema(_ context.Context, _ action.SchemaRequest, resp *act
 				Optional:            true,
 				MarkdownDescription: "A request body to attach to the API call",
 			},
+			"request_body_file": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: requestBodyFileDescription,
+			},
+			"request_multipart": actionMultipartSchema(requestMultipartDescription),
 			"headers": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
@@ -164,14 +171,24 @@ func (c *CurlAction) Invoke(ctx context.Context, req action.InvokeRequest, resp 
 		return
 	}
 
-	reqBody := []byte(data.RequestBody.ValueString())
-	request, err := http.NewRequest(data.Method.ValueString(), data.URL.ValueString(), bytes.NewBuffer(reqBody))
+	payload, payloadDiags := resolveRequestPayload(data.RequestBody, types.StringNull(), data.RequestBodyFile, data.RequestMultipart)
+	resp.Diagnostics.Append(payloadDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var reqBodyReader io.Reader
+	if len(payload.Body) > 0 {
+		reqBodyReader = bytes.NewBuffer(payload.Body)
+	}
+	request, err := http.NewRequest(data.Method.ValueString(), data.URL.ValueString(), reqBodyReader)
 	if err != nil {
 		resp.Diagnostics.AddError("HTTP Request Creation Failed", err.Error())
 		return
 	}
 
 	applyRequestHeadersWithDefaults(request, data.Headers, c.providerMeta())
+	applyResolvedPayloadToRequest(request, payload)
 
 	if !data.RequestParameters.IsNull() && !data.RequestParameters.IsUnknown() {
 		params := request.URL.Query()
@@ -225,7 +242,7 @@ func (c *CurlAction) Invoke(ctx context.Context, req action.InvokeRequest, resp 
 }
 
 func (c *CurlAction) ConfigValidators(_ context.Context) []action.ConfigValidator {
-	return []action.ConfigValidator{
+	validators := []action.ConfigValidator{
 		actionvalidator.RequiredTogether(
 			path.MatchRoot("cert_file"),
 			path.MatchRoot("key_file"),
@@ -239,4 +256,6 @@ func (c *CurlAction) ConfigValidators(_ context.Context) []action.ConfigValidato
 			path.MatchRoot("retry_interval"),
 		),
 	}
+	validators = append(validators, actionBodyValidators("request_body", "request_body_file", "request_multipart")...)
+	return validators
 }

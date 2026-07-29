@@ -5,7 +5,7 @@ description: |-
 
   With TerraCurl, you can define create, read, update, and delete operations as HTTP requests, complete with support for custom headers, authentication, TLS configuration, retries, and response parsing. This makes it possible to manage third-party APIs, internal services, and bespoke platforms as first-class Terraform resources, without resorting to brittle null_resource hacks or external scripts.
 
-  TerraCurl is designed for reliability and correctness, supporting state reconciliation, drift detection, idempotency, and lifecycle control. It can trigger resource recreation when remote state diverges from expected responses, handle ephemeral resources, and work with multipart and form-based APIs. By bringing arbitrary HTTP endpoints under Terraform’s declarative model, TerraCurl bridges the gap between “infrastructure as code” and “API as code”, enabling consistent automation, auditability, and repeatability across the entire platform stack.
+  TerraCurl is designed for reliability and correctness, supporting state reconciliation, drift detection, idempotency, and lifecycle control. It can trigger resource recreation when remote state diverges from expected responses, handle ephemeral resources, and load file-based or multipart form request bodies. By bringing arbitrary HTTP endpoints under Terraform’s declarative model, TerraCurl bridges the gap between “infrastructure as code” and “API as code”, enabling consistent automation, auditability, and repeatability across the entire platform stack.
 ---
 
 # {{ .ProviderShortName | upper }} Provider
@@ -14,7 +14,7 @@ TerraCurl is an open-source Terraform provider that enables declarative, configu
 
 With TerraCurl, you can define create, read, update, and delete operations as HTTP requests, complete with support for custom headers, authentication, TLS configuration, retries, and response parsing. This makes it possible to manage third-party APIs, internal services, and bespoke platforms as first-class Terraform resources, without resorting to brittle null_resource hacks or external scripts.
 
-TerraCurl is designed for reliability and correctness, supporting state reconciliation, drift detection, idempotency, and lifecycle control. It can trigger resource recreation when remote state diverges from expected responses, handle ephemeral resources, and work with multipart and form-based APIs. By bringing arbitrary HTTP endpoints under Terraform’s declarative model, TerraCurl bridges the gap between “infrastructure as code” and “API as code”, enabling consistent automation, auditability, and repeatability across the entire platform stack.
+TerraCurl is designed for reliability and correctness, supporting state reconciliation, drift detection, idempotency, and lifecycle control. It can trigger resource recreation when remote state diverges from expected responses, handle ephemeral resources, and load file-based or multipart form request bodies. By bringing arbitrary HTTP endpoints under Terraform’s declarative model, TerraCurl bridges the gap between “infrastructure as code” and “API as code”, enabling consistent automation, auditability, and repeatability across the entire platform stack.
 
 Use the navigation to the left to read about the available resources.
 
@@ -65,5 +65,13 @@ TerraCurl resolves `{response.<path>}` placeholders in destroy URL, body, header
 See the [Destroy Response Templating guide](guides/destroy_templating) for syntax, nested paths, body-based delete, and create-time validation.
 
 {{ tffile "examples/resources/destroy_templating_example/resource.tf" }}
+
+## File and Multipart Request Bodies
+
+TerraCurl supports loading raw request bodies from disk with `request_body_file` and building `multipart/form-data` payloads with `request_multipart` on resources, data sources, actions, and ephemeral resources.
+
+See the [File and Multipart Request Bodies guide](guides/file_and_multipart_bodies) for per-surface examples, mutual exclusion rules, and Content-Type behavior.
+
+{{ tffile "examples/resources/file_and_multipart_example/resource.tf" }}
 
 ## Limitations

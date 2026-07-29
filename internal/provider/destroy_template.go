@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -17,12 +18,11 @@ const responsePlaceholderPrefix = "{response."
 var responsePlaceholderPattern = regexp.MustCompile(`\{response\.([^}]+)\}`)
 
 type resolvedDestroyTemplates struct {
-	URL               string
-	Body              []byte
-	BodyUsedWriteOnly bool
-	DestroyHeaders    types.Map
-	DestroyHeadersWo  types.Map
-	DestroyParams     types.Map
+	URL              string
+	Payload          resolvedRequestPayload
+	DestroyHeaders   types.Map
+	DestroyHeadersWo types.Map
+	DestroyParams    types.Map
 }
 
 func containsResponsePlaceholder(s string) bool {
@@ -52,6 +52,12 @@ func destroyFieldsHavePlaceholders(data *CurlResourceModel) bool {
 		return true
 	}
 	if hasValue(data.DestroyRequestBodyWo) && containsResponsePlaceholder(data.DestroyRequestBodyWo.ValueString()) {
+		return true
+	}
+	if hasValue(data.DestroyRequestBodyFile) && containsResponsePlaceholder(data.DestroyRequestBodyFile.ValueString()) {
+		return true
+	}
+	if multipartConfigHasPlaceholders(data.DestroyRequestMultipart) {
 		return true
 	}
 	return mapContainsResponsePlaceholder(data.DestroyHeaders) ||
@@ -220,6 +226,61 @@ func substituteMapPlaceholders(m types.Map, responseJSON, fieldName string) (typ
 	return tfMap, nil
 }
 
+func multipartConfigHasPlaceholders(config *MultipartConfigModel) bool {
+	if !multipartConfigIsSet(config) {
+		return false
+	}
+	parts, diags := parseMultipartParts(config.Parts)
+	if diags.HasError() {
+		return false
+	}
+	for _, part := range parts {
+		if hasValue(part.Value) && containsResponsePlaceholder(part.Value.ValueString()) {
+			return true
+		}
+	}
+	return false
+}
+
+func substituteMultipartPartValues(config *MultipartConfigModel, responseJSON, fieldName string) (*MultipartConfigModel, error) {
+	if !multipartConfigIsSet(config) {
+		return config, nil
+	}
+
+	parts, diags := parseMultipartParts(config.Parts)
+	if diags.HasError() {
+		return nil, fmt.Errorf("%s: failed to parse multipart parts", fieldName)
+	}
+
+	values := make([]attr.Value, 0, len(parts))
+	for i, part := range parts {
+		value := part.Value.ValueString()
+		if hasValue(part.Value) {
+			substituted, err := substituteFieldPlaceholders(value, responseJSON, fmt.Sprintf("%s.parts[%d].value", fieldName, i))
+			if err != nil {
+				return nil, err
+			}
+			part.Value = types.StringValue(substituted)
+		}
+		obj, objDiags := types.ObjectValue(multipartPartAttrTypes, map[string]attr.Value{
+			"name":         part.Name,
+			"value":        part.Value,
+			"file_path":    part.FilePath,
+			"content_type": part.ContentType,
+		})
+		if objDiags.HasError() {
+			return nil, fmt.Errorf("%s: failed to build multipart part object", fieldName)
+		}
+		values = append(values, obj)
+	}
+
+	partsList, listDiags := types.ListValue(multipartObjectType(), values)
+	if listDiags.HasError() {
+		return nil, fmt.Errorf("%s: failed to build multipart parts list", fieldName)
+	}
+	return &MultipartConfigModel{Parts: partsList}, nil
+}
+
 func resolveDestroyTemplates(data *CurlResourceModel) (resolvedDestroyTemplates, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var resolved resolvedDestroyTemplates
@@ -228,10 +289,15 @@ func resolveDestroyTemplates(data *CurlResourceModel) (resolvedDestroyTemplates,
 		return resolved, diags
 	}
 
-	destroyBody, usedWriteOnlyBody := resolveRequestBody(data.DestroyRequestBody, data.DestroyRequestBodyWo)
+	destroyMultipart := data.DestroyRequestMultipart
+	payload, payloadDiags := resolveRequestPayload(data.DestroyRequestBody, data.DestroyRequestBodyWo, data.DestroyRequestBodyFile, destroyMultipart)
+	diags.Append(payloadDiags...)
+	if diags.HasError() {
+		return resolved, diags
+	}
+
 	resolved.URL = data.DestroyUrl.ValueString()
-	resolved.Body = destroyBody
-	resolved.BodyUsedWriteOnly = usedWriteOnlyBody
+	resolved.Payload = payload
 	resolved.DestroyHeaders = data.DestroyHeaders
 	resolved.DestroyHeadersWo = data.DestroyHeadersWo
 	resolved.DestroyParams = data.DestroyRequestParameters
@@ -256,13 +322,26 @@ func resolveDestroyTemplates(data *CurlResourceModel) (resolvedDestroyTemplates,
 	}
 	resolved.URL = url
 
-	if len(destroyBody) > 0 {
-		bodyStr, err := substituteFieldPlaceholders(string(destroyBody), responseJSON, "destroy_request_body")
+	substitutedMultipart, err := substituteMultipartPartValues(data.DestroyRequestMultipart, responseJSON, "destroy_request_multipart")
+	if err != nil {
+		diags.AddError("Destroy Template Error", err.Error())
+		return resolved, diags
+	}
+
+	payload, payloadDiags = resolveRequestPayload(data.DestroyRequestBody, data.DestroyRequestBodyWo, data.DestroyRequestBodyFile, substitutedMultipart)
+	diags.Append(payloadDiags...)
+	if diags.HasError() {
+		return resolved, diags
+	}
+	resolved.Payload = payload
+
+	if len(payload.Body) > 0 && !payload.UsedMultipartBody && !payload.UsedFileBody {
+		bodyStr, err := substituteFieldPlaceholders(string(payload.Body), responseJSON, "destroy_request_body")
 		if err != nil {
 			diags.AddError("Destroy Template Error", err.Error())
 			return resolved, diags
 		}
-		resolved.Body = []byte(bodyStr)
+		resolved.Payload.Body = []byte(bodyStr)
 	}
 
 	headers, err := substituteMapPlaceholders(data.DestroyHeaders, responseJSON, "destroy_headers")

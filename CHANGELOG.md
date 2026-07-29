@@ -1,3 +1,9 @@
+## 2.10.0
+
+ENHANCEMENTS:
+
+- Add `request_body_file` and `request_multipart` request body support across `terracurl_request` resources, data sources, actions, and ephemeral resources. File bytes are read at request time and are not stored in Terraform state. Multipart bodies set `Content-Type` with a generated boundary. Closes #43 and #84.
+
 ## 2.9.0
 
 ENHANCEMENTS:

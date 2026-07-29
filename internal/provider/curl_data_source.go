@@ -30,28 +30,30 @@ func NewCurlDataSource() datasource.DataSource {
 }
 
 type CurlDataSourceModel struct {
-	ID                types.String     `tfsdk:"id"`
-	Name              types.String     `tfsdk:"name"`
-	Url               types.String     `tfsdk:"url"`
-	Method            types.String     `tfsdk:"method"`
-	RequestBody       types.String     `tfsdk:"request_body"`
-	Headers           types.Map        `tfsdk:"headers"`
-	DigestAuth        *DigestAuthModel `tfsdk:"digest_auth"`
-	RequestParameters types.Map        `tfsdk:"request_parameters"`
-	RequestUrlString  types.String     `tfsdk:"request_url_string"`
-	CertFile          types.String     `tfsdk:"cert_file"`
-	KeyFile           types.String     `tfsdk:"key_file"`
-	CaCertFile        types.String     `tfsdk:"ca_cert_file"`
-	CaCertDirectory   types.String     `tfsdk:"ca_cert_directory"`
-	SkipTlsVerify     types.Bool       `tfsdk:"skip_tls_verify"`
-	RetryInterval     types.Int64      `tfsdk:"retry_interval"`
-	MaxRetry          types.Int64      `tfsdk:"max_retry"`
-	Timeout           types.Int64      `tfsdk:"timeout"`
-	Response          types.String     `tfsdk:"response"`
-	SensitiveResponse types.String     `tfsdk:"sensitive_response"`
-	ResponseSensitive types.Bool       `tfsdk:"response_sensitive"`
-	ResponseCodes     types.List       `tfsdk:"response_codes"`
-	StatusCode        types.String     `tfsdk:"status_code"`
+	ID                types.String          `tfsdk:"id"`
+	Name              types.String          `tfsdk:"name"`
+	Url               types.String          `tfsdk:"url"`
+	Method            types.String          `tfsdk:"method"`
+	RequestBody       types.String          `tfsdk:"request_body"`
+	RequestBodyFile   types.String          `tfsdk:"request_body_file"`
+	RequestMultipart  *MultipartConfigModel `tfsdk:"request_multipart"`
+	Headers           types.Map             `tfsdk:"headers"`
+	DigestAuth        *DigestAuthModel      `tfsdk:"digest_auth"`
+	RequestParameters types.Map             `tfsdk:"request_parameters"`
+	RequestUrlString  types.String          `tfsdk:"request_url_string"`
+	CertFile          types.String          `tfsdk:"cert_file"`
+	KeyFile           types.String          `tfsdk:"key_file"`
+	CaCertFile        types.String          `tfsdk:"ca_cert_file"`
+	CaCertDirectory   types.String          `tfsdk:"ca_cert_directory"`
+	SkipTlsVerify     types.Bool            `tfsdk:"skip_tls_verify"`
+	RetryInterval     types.Int64           `tfsdk:"retry_interval"`
+	MaxRetry          types.Int64           `tfsdk:"max_retry"`
+	Timeout           types.Int64           `tfsdk:"timeout"`
+	Response          types.String          `tfsdk:"response"`
+	SensitiveResponse types.String          `tfsdk:"sensitive_response"`
+	ResponseSensitive types.Bool            `tfsdk:"response_sensitive"`
+	ResponseCodes     types.List            `tfsdk:"response_codes"`
+	StatusCode        types.String          `tfsdk:"status_code"`
 }
 
 func (d *CurlDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -82,6 +84,11 @@ func (d *CurlDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 				Optional:            true,
 				MarkdownDescription: "A request body to attach to the API call",
 			},
+			"request_body_file": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: requestBodyFileDescription,
+			},
+			"request_multipart": dataSourceMultipartSchema(requestMultipartDescription),
 			"headers": schema.MapAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
@@ -208,8 +215,17 @@ func (d *CurlDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 		return
 	}
 
-	reqBody := []byte(data.RequestBody.ValueString())
-	request, err := http.NewRequest(data.Method.ValueString(), data.Url.ValueString(), bytes.NewBuffer(reqBody))
+	payload, payloadDiags := resolveRequestPayload(data.RequestBody, types.StringNull(), data.RequestBodyFile, data.RequestMultipart)
+	resp.Diagnostics.Append(payloadDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	var reqBodyReader io.Reader
+	if len(payload.Body) > 0 {
+		reqBodyReader = bytes.NewBuffer(payload.Body)
+	}
+	request, err := http.NewRequest(data.Method.ValueString(), data.Url.ValueString(), reqBodyReader)
 	if err != nil {
 		resp.Diagnostics.AddError("HTTP Request Creation Failed", err.Error())
 		return
@@ -217,6 +233,7 @@ func (d *CurlDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 
 	// Add headers.
 	applyRequestHeadersWithDefaults(request, data.Headers, d.providerMeta())
+	applyResolvedPayloadToRequest(request, payload)
 
 	// Add query parameters.
 	if !data.RequestParameters.IsNull() && !data.RequestParameters.IsUnknown() {
@@ -293,7 +310,7 @@ func (d *CurlDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 }
 
 func (d CurlDataSource) ConfigValidators(ctx context.Context) []datasource.ConfigValidator {
-	return []datasource.ConfigValidator{
+	validators := []datasource.ConfigValidator{
 		datasourcevalidator.RequiredTogether(
 			path.MatchRoot("cert_file"),
 			path.MatchRoot("key_file"),
@@ -307,4 +324,6 @@ func (d CurlDataSource) ConfigValidators(ctx context.Context) []datasource.Confi
 			path.MatchRoot("retry_interval"),
 		),
 	}
+	validators = append(validators, dataSourceBodyValidators("request_body", "request_body_file", "request_multipart")...)
+	return validators
 }
