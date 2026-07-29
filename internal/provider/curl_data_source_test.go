@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -455,6 +456,93 @@ data "terracurl_request" "default_test" {
   url            = "https://example.com/data-default"
   method         = "GET"
   response_codes = ["200"]
+}
+`, name)
+}
+
+func TestAccDataSourceCurlResponseBase64(t *testing.T) {
+	t.Setenv("TF_ACC", "true")
+	t.Setenv("USE_DEFAULT_CLIENT_FOR_TESTS", "true")
+
+	binaryBody := []byte{0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x01, 0x02}
+	expectedBase64 := base64.StdEncoding.EncodeToString(binaryBody)
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	httpmock.RegisterResponder(
+		"GET",
+		"https://example.com/binary",
+		httpmock.NewBytesResponder(200, binaryBody),
+	)
+
+	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDataSourceCurlResponseBase64(rName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.terracurl_request.binary_test", "response_base64", expectedBase64),
+					resource.TestCheckResourceAttr("data.terracurl_request.binary_test", "sensitive_response_base64", ""),
+				),
+			},
+		},
+	})
+}
+
+func testAccDataSourceCurlResponseBase64(name string) string {
+	return fmt.Sprintf(`
+data "terracurl_request" "binary_test" {
+  name           = "%s"
+  url            = "https://example.com/binary"
+  method         = "GET"
+  response_codes = ["200"]
+}
+`, name)
+}
+
+func TestAccDataSourceCurlSensitiveResponseBase64(t *testing.T) {
+	t.Setenv("TF_ACC", "true")
+	t.Setenv("USE_DEFAULT_CLIENT_FOR_TESTS", "true")
+
+	binaryBody := []byte{0x00, 0x01, 0x02, 0xff}
+	expectedBase64 := base64.StdEncoding.EncodeToString(binaryBody)
+
+	httpmock.Activate()
+	defer httpmock.DeactivateAndReset()
+	httpmock.RegisterResponder(
+		"GET",
+		"https://example.com/binary-sensitive",
+		httpmock.NewBytesResponder(200, binaryBody),
+	)
+
+	rName := acctest.RandStringFromCharSet(10, acctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccDataSourceCurlSensitiveResponseBase64(rName),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.terracurl_request.binary_sensitive_test", "response_base64", ""),
+					resource.TestCheckResourceAttr("data.terracurl_request.binary_sensitive_test", "sensitive_response_base64", expectedBase64),
+				),
+			},
+		},
+	})
+}
+
+func testAccDataSourceCurlSensitiveResponseBase64(name string) string {
+	return fmt.Sprintf(`
+data "terracurl_request" "binary_sensitive_test" {
+  name               = "%s"
+  url                = "https://example.com/binary-sensitive"
+  method             = "GET"
+  response_codes     = ["200"]
+  response_sensitive = true
 }
 `, name)
 }

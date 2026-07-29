@@ -30,30 +30,32 @@ func NewCurlDataSource() datasource.DataSource {
 }
 
 type CurlDataSourceModel struct {
-	ID                types.String          `tfsdk:"id"`
-	Name              types.String          `tfsdk:"name"`
-	Url               types.String          `tfsdk:"url"`
-	Method            types.String          `tfsdk:"method"`
-	RequestBody       types.String          `tfsdk:"request_body"`
-	RequestBodyFile   types.String          `tfsdk:"request_body_file"`
-	RequestMultipart  *MultipartConfigModel `tfsdk:"request_multipart"`
-	Headers           types.Map             `tfsdk:"headers"`
-	DigestAuth        *DigestAuthModel      `tfsdk:"digest_auth"`
-	RequestParameters types.Map             `tfsdk:"request_parameters"`
-	RequestUrlString  types.String          `tfsdk:"request_url_string"`
-	CertFile          types.String          `tfsdk:"cert_file"`
-	KeyFile           types.String          `tfsdk:"key_file"`
-	CaCertFile        types.String          `tfsdk:"ca_cert_file"`
-	CaCertDirectory   types.String          `tfsdk:"ca_cert_directory"`
-	SkipTlsVerify     types.Bool            `tfsdk:"skip_tls_verify"`
-	RetryInterval     types.Int64           `tfsdk:"retry_interval"`
-	MaxRetry          types.Int64           `tfsdk:"max_retry"`
-	Timeout           types.Int64           `tfsdk:"timeout"`
-	Response          types.String          `tfsdk:"response"`
-	SensitiveResponse types.String          `tfsdk:"sensitive_response"`
-	ResponseSensitive types.Bool            `tfsdk:"response_sensitive"`
-	ResponseCodes     types.List            `tfsdk:"response_codes"`
-	StatusCode        types.String          `tfsdk:"status_code"`
+	ID                      types.String          `tfsdk:"id"`
+	Name                    types.String          `tfsdk:"name"`
+	Url                     types.String          `tfsdk:"url"`
+	Method                  types.String          `tfsdk:"method"`
+	RequestBody             types.String          `tfsdk:"request_body"`
+	RequestBodyFile         types.String          `tfsdk:"request_body_file"`
+	RequestMultipart        *MultipartConfigModel `tfsdk:"request_multipart"`
+	Headers                 types.Map             `tfsdk:"headers"`
+	DigestAuth              *DigestAuthModel      `tfsdk:"digest_auth"`
+	RequestParameters       types.Map             `tfsdk:"request_parameters"`
+	RequestUrlString        types.String          `tfsdk:"request_url_string"`
+	CertFile                types.String          `tfsdk:"cert_file"`
+	KeyFile                 types.String          `tfsdk:"key_file"`
+	CaCertFile              types.String          `tfsdk:"ca_cert_file"`
+	CaCertDirectory         types.String          `tfsdk:"ca_cert_directory"`
+	SkipTlsVerify           types.Bool            `tfsdk:"skip_tls_verify"`
+	RetryInterval           types.Int64           `tfsdk:"retry_interval"`
+	MaxRetry                types.Int64           `tfsdk:"max_retry"`
+	Timeout                 types.Int64           `tfsdk:"timeout"`
+	Response                types.String          `tfsdk:"response"`
+	SensitiveResponse       types.String          `tfsdk:"sensitive_response"`
+	ResponseBase64          types.String          `tfsdk:"response_base64"`
+	SensitiveResponseBase64 types.String          `tfsdk:"sensitive_response_base64"`
+	ResponseSensitive       types.Bool            `tfsdk:"response_sensitive"`
+	ResponseCodes           types.List            `tfsdk:"response_codes"`
+	StatusCode              types.String          `tfsdk:"status_code"`
 }
 
 func (d *CurlDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -139,12 +141,21 @@ func (d *CurlDataSource) Schema(ctx context.Context, req datasource.SchemaReques
 			},
 			"response": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "JSON response received from request. Empty when `response_sensitive` is `true`; use `sensitive_response` instead.",
+				MarkdownDescription: "JSON response received from request. Empty when `response_sensitive` is `true`; use `sensitive_response` instead. For binary responses, use `response_base64` instead.",
 			},
 			"sensitive_response": schema.StringAttribute{
 				Computed:            true,
 				Sensitive:           true,
-				MarkdownDescription: "JSON response received from request, marked as sensitive so it is not displayed in plan output. Populated only when `response_sensitive` is `true`.",
+				MarkdownDescription: "JSON response received from request, marked as sensitive so it is not displayed in plan output. Populated only when `response_sensitive` is `true`. For binary responses, use `sensitive_response_base64` instead.",
+			},
+			"response_base64": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "Response body encoded as base64 (standard) as defined in RFC 4648. Use this for binary content. Empty when `response_sensitive` is `true`; use `sensitive_response_base64` instead.",
+			},
+			"sensitive_response_base64": schema.StringAttribute{
+				Computed:            true,
+				Sensitive:           true,
+				MarkdownDescription: "Response body encoded as base64 (standard) as defined in RFC 4648, marked as sensitive. Populated only when `response_sensitive` is `true`.",
 			},
 			"response_sensitive": schema.BoolAttribute{
 				Optional:            true,
@@ -302,7 +313,10 @@ func (d *CurlDataSource) Read(ctx context.Context, req datasource.ReadRequest, r
 	}
 
 	data.RequestUrlString = types.StringValue(request.URL.String())
-	setDataSourceResponseValues(&data, bodyString)
+	if responseBodyContainsInvalidUTF8(body) {
+		tflog.Warn(ctx, "Response body is not valid UTF-8; use response_base64 for binary content")
+	}
+	setDataSourceResponseValuesFromBytes(&data, body, bodyString)
 	data.StatusCode = types.StringValue(strconv.Itoa(statusCode))
 
 	// Save data into Terraform state.
