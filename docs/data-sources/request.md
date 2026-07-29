@@ -44,8 +44,10 @@ TerraCurl request data source
 
 - `id` (String) Example identifier
 - `request_url_string` (String) Request URL includes parameters if request specified
-- `response` (String) JSON response received from request. Empty when `response_sensitive` is `true`; use `sensitive_response` instead.
-- `sensitive_response` (String, Sensitive) JSON response received from request, marked as sensitive so it is not displayed in plan output. Populated only when `response_sensitive` is `true`.
+- `response` (String) JSON response received from request. Empty when `response_sensitive` is `true`; use `sensitive_response` instead. For binary responses, use `response_base64` instead.
+- `response_base64` (String) Response body encoded as base64 (standard) as defined in RFC 4648. Use this for binary content. Empty when `response_sensitive` is `true`; use `sensitive_response_base64` instead.
+- `sensitive_response` (String, Sensitive) JSON response received from request, marked as sensitive so it is not displayed in plan output. Populated only when `response_sensitive` is `true`. For binary responses, use `sensitive_response_base64` instead.
+- `sensitive_response_base64` (String, Sensitive) Response body encoded as base64 (standard) as defined in RFC 4648, marked as sensitive. Populated only when `response_sensitive` is `true`.
 - `status_code` (String) Response status code received from request
 
 <a id="nestedatt--digest_auth"></a>

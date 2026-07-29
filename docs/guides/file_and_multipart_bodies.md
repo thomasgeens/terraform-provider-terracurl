@@ -170,6 +170,12 @@ Write-only string bodies (`*_request_body_wo`) remain available for inline secre
 
 See the [Destroy Response Templating guide](destroy_templating) for placeholder syntax.
 
+## Binary response bodies (data source)
+
+To download binary files without UTF-8 corruption, use the data source computed attributes `response_base64` and `sensitive_response_base64`. These encode the raw response bytes with RFC 4648 standard base64. Decode in Terraform with `base64decode()` (for example when writing to disk with `local_file`).
+
+See [`examples/data-sources/binary_response_example`](../../examples/data-sources/binary_response_example/data-source.tf).
+
 ## Limitations
 
 - File contents are loaded fully into memory at request time (same as embedding bytes in configuration).

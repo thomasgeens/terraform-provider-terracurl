@@ -3,6 +3,7 @@ package provider
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -55,6 +57,28 @@ func setResponseValue(sensitive bool, response, sensitiveResponse *types.String,
 		*response = types.StringValue(body)
 		*sensitiveResponse = types.StringValue("")
 	}
+}
+
+func encodeResponseBase64(body []byte) string {
+	if len(body) == 0 {
+		return ""
+	}
+	return base64.StdEncoding.EncodeToString(body)
+}
+
+func setResponseBase64Value(sensitive bool, response, sensitiveResponse *types.String, body []byte) {
+	encoded := encodeResponseBase64(body)
+	if sensitive {
+		*response = types.StringValue("")
+		*sensitiveResponse = types.StringValue(encoded)
+	} else {
+		*response = types.StringValue(encoded)
+		*sensitiveResponse = types.StringValue("")
+	}
+}
+
+func responseBodyContainsInvalidUTF8(body []byte) bool {
+	return len(body) > 0 && !utf8.Valid(body)
 }
 
 func responseSensitiveEnabled(value types.Bool) bool {
@@ -107,13 +131,10 @@ func setEphemeralCloseResponse(data *CurlEphemeralModel, body string) {
 	)
 }
 
-func setDataSourceResponseValues(data *CurlDataSourceModel, body string) {
-	setResponseValue(
-		responseSensitiveEnabled(data.ResponseSensitive),
-		&data.Response,
-		&data.SensitiveResponse,
-		body,
-	)
+func setDataSourceResponseValuesFromBytes(data *CurlDataSourceModel, body []byte, bodyString string) {
+	sensitive := responseSensitiveEnabled(data.ResponseSensitive)
+	setResponseValue(sensitive, &data.Response, &data.SensitiveResponse, bodyString)
+	setResponseBase64Value(sensitive, &data.ResponseBase64, &data.SensitiveResponseBase64, body)
 }
 
 func responseCodeChecker(expectedStatusCodes types.List, receivedStatusCode int) bool {

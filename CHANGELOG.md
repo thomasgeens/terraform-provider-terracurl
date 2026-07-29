@@ -1,3 +1,9 @@
+## 2.11.0
+
+ENHANCEMENTS:
+
+- Add `response_base64` and `sensitive_response_base64` computed attributes to the `terracurl_request` data source for lossless binary response download via RFC 4648 base64 encoding. Closes #62.
+
 ## 2.10.0
 
 ENHANCEMENTS:
