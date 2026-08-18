@@ -471,6 +471,7 @@ func (r *CurlResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				Computed:            true,
 				MarkdownDescription: "Informational marker updated when remote drift is detected during read. Replacement is planned via ModifyPlan when drift is detected.",
 				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
