@@ -947,7 +947,40 @@ func (r *CurlResource) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	nullWriteOnlyAttributes(&plan)
+	// Update performs no HTTP write call, so computed attributes the plan left unknown must be
+	// resolved before writing state or Terraform rejects the result object.
+	resolveUnknownComputedFromState(&plan, state)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
+}
+
+// resolveUnknownComputedFromState carries prior state forward for any computed attribute the
+// plan marked "known after apply" but that the update path did not populate.
+//
+// Only attributes that are purely Computed need handling here. Every Optional+Computed
+// attribute on this resource declares a Default, so Terraform resolves those during planning
+// and they are never unknown by the time Update runs.
+func resolveUnknownComputedFromState(plan *CurlResourceModel, state CurlResourceModel) {
+	if plan.Id.IsUnknown() {
+		plan.Id = state.Id
+	}
+	if plan.Response.IsUnknown() {
+		plan.Response = state.Response
+	}
+	if plan.SensitiveResponse.IsUnknown() {
+		plan.SensitiveResponse = state.SensitiveResponse
+	}
+	if plan.StatusCode.IsUnknown() {
+		plan.StatusCode = state.StatusCode
+	}
+	if plan.RequestUrlString.IsUnknown() {
+		plan.RequestUrlString = state.RequestUrlString
+	}
+	if plan.DestroyRequestUrlString.IsUnknown() {
+		plan.DestroyRequestUrlString = state.DestroyRequestUrlString
+	}
+	if plan.DriftMarker.IsUnknown() {
+		plan.DriftMarker = state.DriftMarker
+	}
 }
 
 func (r *CurlResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
