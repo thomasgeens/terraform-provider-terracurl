@@ -102,6 +102,7 @@ type CurlResourceModel struct {
 	DestroyTimeout              types.Int64           `tfsdk:"destroy_timeout"`
 	DestroyResponseCodes        types.List            `tfsdk:"destroy_response_codes"`
 	SkipRead                    types.Bool            `tfsdk:"skip_read"`
+	ReadAfterWrite              types.Bool            `tfsdk:"read_after_write"`
 	ReadUrl                     types.String          `tfsdk:"read_url"`
 	ReadMethod                  types.String          `tfsdk:"read_method"`
 	ReadHeaders                 types.Map             `tfsdk:"read_headers"`
@@ -398,6 +399,19 @@ func (r *CurlResource) Schema(ctx context.Context, req resource.SchemaRequest, r
 				MarkdownDescription: "Set to true to skip the read operation (no drift detection). Defaults to true.",
 				Default:             booldefault.StaticBool(true),
 			},
+			"read_after_write": schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				MarkdownDescription: "When true, immediately after a successful create or update Terraform will " +
+					"call the read endpoint (configured via `read_url`, `read_method`, and `read_response_codes`) " +
+					"and store the read response in state instead of the create/update response body. " +
+					"This is the recommended approach when the API returns a different response shape on " +
+					"write versus read (e.g. `{\"Success\":true}` on create but the full resource object on read), " +
+					"so that subsequent drift detection compares like-for-like. " +
+					"`read_url`, `read_method`, and `read_response_codes` must be configured when this is true. " +
+					"Defaults to false.",
+				Default: booldefault.StaticBool(false),
+			},
 			"read_url": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "API endpoint for reading resource state. Required if `skip_read` is false.",
@@ -545,6 +559,16 @@ func (r *CurlResource) Create(ctx context.Context, req resource.CreateRequest, r
 		}
 	}
 
+	if !data.ReadAfterWrite.IsNull() && data.ReadAfterWrite.ValueBool() {
+		if data.ReadUrl.IsNull() || data.ReadMethod.IsNull() || data.ReadResponseCodes.IsNull() {
+			resp.Diagnostics.AddError(
+				"Invalid Configuration",
+				"If `read_after_write` is set to `true`, `read_url`, `read_method`, and `read_response_codes` must be provided.",
+			)
+			return
+		}
+	}
+
 	if !data.SkipDestroy.IsNull() && !data.SkipDestroy.ValueBool() {
 		if data.DestroyUrl.IsNull() || data.DestroyMethod.IsNull() || data.DestroyResponseCodes.IsNull() {
 			resp.Diagnostics.AddError(
@@ -686,6 +710,18 @@ func (r *CurlResource) Create(ctx context.Context, req resource.CreateRequest, r
 	setResourceResponseValues(&data, sanitizedResponse)
 	data.StatusCode = types.StringValue(strconv.Itoa(statusCode))
 
+	// read_after_write: immediately after a successful create, call the read endpoint and
+	// store its response in state instead of the create response. This is the right approach
+	// when the API returns a different body shape on create vs read (e.g. {"Success":true}
+	// on create but the full resource object on read), so that subsequent drift detection
+	// compares like-for-like.
+	if data.ReadAfterWrite.ValueBool() {
+		resp.Diagnostics.Append(r.executeReadAfterWrite(ctx, &data, "create")...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
 	if !data.SkipDestroy.ValueBool() {
 		resp.Diagnostics.Append(validateDestroyTemplates(data)...)
 		if resp.Diagnostics.HasError() {
@@ -716,6 +752,58 @@ func ignoredResponseFields(data CurlResourceModel) []string {
 		}
 	}
 	return ignoredFields
+}
+
+// executeReadAfterWrite calls the configured read endpoint and stores its sanitized response
+// in state, replacing the write (create/update) response. It is called after a successful
+// create or update when read_after_write = true. The operation label ("create"/"update") is
+// used only for log and warning messages.
+func (r *CurlResource) executeReadAfterWrite(ctx context.Context, data *CurlResourceModel, operation string) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if data.ReadUrl.IsNull() || data.ReadMethod.IsNull() || data.ReadResponseCodes.IsNull() {
+		diags.AddError(
+			"read_after_write Configuration Error",
+			fmt.Sprintf("`read_url`, `read_method`, and `read_response_codes` must be configured when `read_after_write` is true (triggered after %s).", operation),
+		)
+		return diags
+	}
+
+	tflog.Debug(ctx, fmt.Sprintf("read_after_write: executing read after %s to store canonical read response in state", operation))
+
+	readStatusCode, readBody, readDiags := r.executeReadRequest(ctx, *data)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	readBodyString := readBody
+	if readBodyString == "" {
+		readBodyString = "{}"
+	}
+
+	ignoredFields := ignoredResponseFields(*data)
+	sanitizedReadResponse, err := sanitizeResponse(readBodyString, ignoredFields)
+	if err != nil {
+		diags.AddWarning(
+			fmt.Sprintf("read_after_write: sanitize warning after %s", operation),
+			fmt.Sprintf("Failed to sanitize read response; keeping %s response in state: %s", operation, err),
+		)
+		return diags
+	}
+
+	if !responseCodeChecker(data.ReadResponseCodes, readStatusCode) {
+		diags.AddWarning(
+			fmt.Sprintf("read_after_write: unexpected status code after %s", operation),
+			fmt.Sprintf("Read returned status %d (not in read_response_codes); keeping %s response in state.", readStatusCode, operation),
+		)
+		return diags
+	}
+
+	setResourceResponseValues(data, sanitizedReadResponse)
+	data.StatusCode = types.StringValue(strconv.Itoa(readStatusCode))
+	tflog.Debug(ctx, fmt.Sprintf("read_after_write: stored read response in state after %s", operation))
+	return diags
 }
 
 func (r *CurlResource) executeReadRequest(ctx context.Context, data CurlResourceModel) (statusCode int, body string, diags diag.Diagnostics) {
@@ -946,9 +1034,19 @@ func (r *CurlResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		}
 	}
 
+	// read_after_write: immediately after a successful update, call the read endpoint and
+	// store its response in state instead of the plan values.
+	if plan.ReadAfterWrite.ValueBool() {
+		resp.Diagnostics.Append(r.executeReadAfterWrite(ctx, &plan, "update")...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
+	}
+
 	nullWriteOnlyAttributes(&plan)
 	// Update performs no HTTP write call, so computed attributes the plan left unknown must be
-	// resolved before writing state or Terraform rejects the result object.
+	// resolved before writing state or Terraform rejects the result object. read_after_write may
+	// also return early (warning paths) without setting response/status_code.
 	resolveUnknownComputedFromState(&plan, state)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
